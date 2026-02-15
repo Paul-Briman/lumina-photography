@@ -1,0 +1,63 @@
+Now add the client gallery view and connect the authentication:
+
+1. FIRST, FIX LOGIN (connect frontend to backend):
+   - Update Login.jsx to actually call POST /api/auth/login
+   - Store JWT token in localStorage
+   - Redirect to dashboard on success
+   - Show error message on failure
+   - Add loading state to button
+
+2. CLIENT GALLERY PAGE (Route: /gallery/:token):
+   - Create new component: ClientGallery.jsx
+   - Fetch gallery data from GET /api/share/:token
+   - Show loading skeleton while fetching
+   - If gallery not found, show "Gallery not found" message
+
+3. GALLERY HEADER (Pixieset style):
+   - Gallery title (large, bold)
+   - Client name (gray text)
+   - Photo count (e.g., "24 photos")
+   - Download All button (blue, rounded-full) - appears only when photos exist
+   - Select All checkbox (visible on hover of header)
+
+4. PHOTO GRID (Masonry):
+   - Use CSS columns: 4 on desktop, 3 on tablet, 2 on mobile
+   - Gap: 20px between images
+   - Each photo card:
+     * Rounded corners (8px)
+     * Shadow: 0 2px 8px rgba(0,0,0,0.08)
+     * Hover: scale 1.02, shadow increases
+     * Checkbox appears on hover (top-left, white bg)
+     * Download icon appears on hover (bottom-right, white bg circle)
+
+5. BULK DOWNLOAD:
+   - When photos selected:
+     * Floating bottom bar appears with:
+       - Number selected
+       - "Deselect all" link
+       - "Download Selected" button (blue)
+   - Click download = each file downloads individually (browser handles multiple)
+   - Select all checkbox in header selects all visible photos
+   - Download all button downloads all photos
+
+6. LIGHTBOX:
+   - Click photo to open
+   - Fullscreen with black overlay (90% opacity)
+   - Current photo centered
+   - Left/right arrows to navigate
+   - Close button (X) top-right
+   - Download button top-right next to close
+   - Photo counter bottom (e.g., "5/24")
+
+7. SAMPLE DATA FOR TESTING:
+   - Update seed data to include actual image URLs (use placeholder images from unsplash or picsum)
+   - Example: https://picsum.photos/400/600?random=1
+
+8. STYLING DETAILS:
+   - Background: #FAFAFA
+   - Buttons: blue (#3B82F6) with white text, rounded-full, px-4 py-2
+   - Checkboxes: blue ring when checked
+   - Transitions: all 0.2s ease
+   - Loading skeleton: gray shimmer animation
+
+Make sure all API calls work with the existing backend. Test with demo account.
