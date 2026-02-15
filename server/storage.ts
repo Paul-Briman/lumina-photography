@@ -1,38 +1,110 @@
-import { type User, type InsertUser } from "@shared/schema";
-import { randomUUID } from "crypto";
-
-// modify the interface with any CRUD methods
-// you might need
+import { db } from "./db";
+import { 
+  photographers, galleries, photos, invoices,
+  type InsertPhotographer, type InsertGallery, type InsertInvoice,
+  type Photographer, type Gallery, type Photo, type Invoice
+} from "@shared/schema";
+import { eq, desc } from "drizzle-orm";
 
 export interface IStorage {
-  getUser(id: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+  // Photographers
+  getPhotographerByEmail(email: string): Promise<Photographer | undefined>;
+  getPhotographer(id: number): Promise<Photographer | undefined>;
+  createPhotographer(photographer: InsertPhotographer & { passwordHash: string }): Promise<Photographer>;
+
+  // Galleries
+  getGalleries(photographerId: number): Promise<Gallery[]>;
+  getGallery(id: number): Promise<Gallery | undefined>;
+  getGalleryByToken(token: string): Promise<Gallery | undefined>;
+  createGallery(gallery: InsertGallery & { shareToken: string }): Promise<Gallery>;
+
+  // Photos
+  getPhotos(galleryId: number): Promise<Photo[]>;
+  createPhoto(photo: { galleryId: number; filename: string; storagePath: string; size: number }): Promise<Photo>;
+
+  // Invoices
+  getInvoices(photographerId: number): Promise<(Invoice & { gallery: Gallery })[]>;
+  getInvoice(id: number): Promise<Invoice | undefined>;
+  createInvoice(invoice: InsertInvoice): Promise<Invoice>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<string, User>;
-
-  constructor() {
-    this.users = new Map();
-  }
-
-  async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
-  }
-
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
-  }
-
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
+export class DatabaseStorage implements IStorage {
+  // Photographers
+  async getPhotographerByEmail(email: string): Promise<Photographer | undefined> {
+    const [user] = await db.select().from(photographers).where(eq(photographers.email, email));
     return user;
   }
+
+  async getPhotographer(id: number): Promise<Photographer | undefined> {
+    const [user] = await db.select().from(photographers).where(eq(photographers.id, id));
+    return user;
+  }
+
+  async createPhotographer(photographer: InsertPhotographer & { passwordHash: string }): Promise<Photographer> {
+    const [user] = await db.insert(photographers).values(photographer).returning();
+    return user;
+  }
+
+  // Galleries
+  async getGalleries(photographerId: number): Promise<Gallery[]> {
+    return db.select()
+      .from(galleries)
+      .where(eq(galleries.photographerId, photographerId))
+      .orderBy(desc(galleries.createdAt));
+  }
+
+  async getGallery(id: number): Promise<Gallery | undefined> {
+    const [gallery] = await db.select().from(galleries).where(eq(galleries.id, id));
+    return gallery;
+  }
+
+  async getGalleryByToken(token: string): Promise<Gallery | undefined> {
+    const [gallery] = await db.select().from(galleries).where(eq(galleries.shareToken, token));
+    return gallery;
+  }
+
+  async createGallery(gallery: InsertGallery & { shareToken: string }): Promise<Gallery> {
+    const [newGallery] = await db.insert(galleries).values(gallery).returning();
+    return newGallery;
+  }
+
+  // Photos
+  async getPhotos(galleryId: number): Promise<Photo[]> {
+    return db.select()
+      .from(photos)
+      .where(eq(photos.galleryId, galleryId))
+      .orderBy(desc(photos.createdAt));
+  }
+
+  async createPhoto(photo: { galleryId: number; filename: string; storagePath: string; size: number }): Promise<Photo> {
+    const [newPhoto] = await db.insert(photos).values(photo).returning();
+    return newPhoto;
+  }
+
+  // Invoices
+  async getInvoices(photographerId: number): Promise<(Invoice & { gallery: Gallery })[]> {
+    // Join with galleries to filter by photographer
+    const rows = await db.select({
+        invoice: invoices,
+        gallery: galleries
+      })
+      .from(invoices)
+      .innerJoin(galleries, eq(invoices.galleryId, galleries.id))
+      .where(eq(galleries.photographerId, photographerId))
+      .orderBy(desc(invoices.createdAt));
+      
+    return rows.map(r => ({ ...r.invoice, gallery: r.gallery }));
+  }
+
+  async getInvoice(id: number): Promise<Invoice | undefined> {
+    const [invoice] = await db.select().from(invoices).where(eq(invoices.id, id));
+    return invoice;
+  }
+
+  async createInvoice(invoice: InsertInvoice): Promise<Invoice> {
+    const [newInvoice] = await db.insert(invoices).values(invoice).returning();
+    return newInvoice;
+  }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
