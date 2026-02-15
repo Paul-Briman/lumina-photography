@@ -16,7 +16,9 @@ export interface IStorage {
   getGalleries(photographerId: number): Promise<Gallery[]>;
   getGallery(id: number): Promise<Gallery | undefined>;
   getGalleryByToken(token: string): Promise<Gallery | undefined>;
-  createGallery(gallery: InsertGallery & { shareToken: string }): Promise<Gallery>;
+  createGallery(gallery: InsertGallery & { shareToken: string; downloadPin?: string }): Promise<Gallery>;
+  updateGallery(id: number, updates: Partial<InsertGallery>): Promise<Gallery>;
+  deleteGallery(id: number): Promise<void>;
 
   // Photos
   getPhotos(galleryId: number): Promise<Photo[]>;
@@ -63,9 +65,20 @@ export class DatabaseStorage implements IStorage {
     return gallery;
   }
 
-  async createGallery(gallery: InsertGallery & { shareToken: string }): Promise<Gallery> {
+  async createGallery(gallery: InsertGallery & { shareToken: string; downloadPin?: string }): Promise<Gallery> {
     const [newGallery] = await db.insert(galleries).values(gallery).returning();
     return newGallery;
+  }
+
+  async updateGallery(id: number, updates: Partial<InsertGallery>): Promise<Gallery> {
+    const [updated] = await db.update(galleries).set(updates).where(eq(galleries.id, id)).returning();
+    return updated;
+  }
+
+  async deleteGallery(id: number): Promise<void> {
+    await db.delete(photos).where(eq(photos.galleryId, id));
+    await db.delete(invoices).where(eq(invoices.galleryId, id));
+    await db.delete(galleries).where(eq(galleries.id, id));
   }
 
   // Photos

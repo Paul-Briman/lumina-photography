@@ -8,6 +8,13 @@
       "when": 1771192930725,
       "tag": "0000_faulty_sasquatch",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1771195978317,
+      "tag": "0001_past_smasher",
+      "breakpoints": true
     }
   ]
 }

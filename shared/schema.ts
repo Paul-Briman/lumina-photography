@@ -23,6 +23,7 @@ export const galleries = sqliteTable("galleries", {
   title: text("title").notNull(),
   clientName: text("client_name").notNull(),
   shareToken: text("share_token").notNull().unique(),
+  downloadPin: text("download_pin"),
   createdAt: integer("created_at", { mode: 'timestamp' }).$defaultFn(() => new Date()),
 });
 

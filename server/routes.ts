@@ -96,13 +96,15 @@ export async function registerRoutes(
       const input = api.galleries.create.input.parse(req.body);
       const userId = (req as any).user.id;
       
-      // Generate unique share token
+      // Generate unique share token and download PIN
       const shareToken = randomBytes(16).toString('hex');
+      const downloadPin = Math.floor(1000 + Math.random() * 9000).toString();
       
       const gallery = await storage.createGallery({ 
         ...input, 
         photographerId: userId,
-        shareToken 
+        shareToken,
+        downloadPin
       });
       
       res.status(201).json(gallery);
@@ -112,6 +114,26 @@ export async function registerRoutes(
       }
       throw err;
     }
+  });
+
+  app.patch("/api/galleries/:id", authenticateToken, async (req, res) => {
+    const userId = (req as any).user.id;
+    const galleryId = Number(req.params.id);
+    const gallery = await storage.getGallery(galleryId);
+    if (!gallery || gallery.photographerId !== userId) return res.sendStatus(403);
+
+    const updated = await storage.updateGallery(galleryId, req.body);
+    res.json(updated);
+  });
+
+  app.delete("/api/galleries/:id", authenticateToken, async (req, res) => {
+    const userId = (req as any).user.id;
+    const galleryId = Number(req.params.id);
+    const gallery = await storage.getGallery(galleryId);
+    if (!gallery || gallery.photographerId !== userId) return res.sendStatus(403);
+
+    await storage.deleteGallery(galleryId);
+    res.sendStatus(204);
   });
 
   app.get(api.galleries.get.path, authenticateToken, async (req, res) => {

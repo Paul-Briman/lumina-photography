@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, Image as ImageIcon, Loader2, ArrowRight } from "lucide-react";
+import { Plus, Image as ImageIcon, Loader2, ArrowRight, MoreVertical, Share2, Trash2, Edit2 } from "lucide-react";
 import { useGalleries, useCreateGallery } from "@/hooks/use-galleries";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { insertGallerySchema } from "@shared/schema";
 import { z } from "zod";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 function CreateGalleryDialog() {
   const [open, setOpen] = useState(false);
@@ -21,15 +24,14 @@ function CreateGalleryDialog() {
     defaultValues: {
       title: "",
       clientName: "",
-      photographerId: 0, // This is ignored by schema validation on client side for forms
+      photographerId: 0,
     },
   });
 
   const onSubmit = (data: z.infer<typeof insertGallerySchema>) => {
-    // We don't need photographerId in the form submission as it's handled by backend auth
     createGallery.mutate({
       ...data,
-      photographerId: 0 // placeholder
+      photographerId: 0
     }, {
       onSuccess: () => {
         setOpen(false);
@@ -41,29 +43,29 @@ function CreateGalleryDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all">
+        <Button className="shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all rounded-full px-6 h-11">
           <Plus className="mr-2 h-4 w-4" />
           New Gallery
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="rounded-2xl">
         <DialogHeader>
-          <DialogTitle>Create New Gallery</DialogTitle>
+          <DialogTitle className="text-2xl font-display font-bold">Create New Gallery</DialogTitle>
           <DialogDescription>
             Add a new gallery for your client. You can upload photos after creating it.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label>Gallery Title</Label>
-            <Input placeholder="Wedding at The Plaza" {...form.register("title")} />
+            <Label className="text-sm font-medium">Gallery Title</Label>
+            <Input className="rounded-xl h-11" placeholder="Wedding at The Plaza" {...form.register("title")} />
           </div>
           <div className="space-y-2">
-            <Label>Client Name</Label>
-            <Input placeholder="John & Jane Doe" {...form.register("clientName")} />
+            <Label className="text-sm font-medium">Client Name</Label>
+            <Input className="rounded-xl h-11" placeholder="John & Jane Doe" {...form.register("clientName")} />
           </div>
           <DialogFooter>
-            <Button type="submit" disabled={createGallery.isPending}>
+            <Button type="submit" className="rounded-full px-8 h-11 w-full sm:w-auto" disabled={createGallery.isPending}>
               {createGallery.isPending ? "Creating..." : "Create Gallery"}
             </Button>
           </DialogFooter>
@@ -75,13 +77,25 @@ function CreateGalleryDialog() {
 
 export default function GalleryList() {
   const { data: galleries, isLoading } = useGalleries();
+  const [, setLocation] = useLocation();
+  const { toast } = useToast();
+
+  const deleteGallery = async (id: number) => {
+    try {
+      await apiRequest("DELETE", `/api/galleries/${id}`);
+      queryClient.invalidateQueries({ queryKey: ["/api/galleries"] });
+      toast({ title: "Success", description: "Gallery deleted." });
+    } catch (e) {
+      toast({ title: "Error", description: "Failed to delete gallery.", variant: "destructive" });
+    }
+  };
 
   return (
     <DashboardLayout>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-12">
         <div>
-          <h1 className="text-3xl font-display font-bold text-foreground">Galleries</h1>
-          <p className="text-muted-foreground mt-1">Manage and share your photo collections.</p>
+          <h1 className="text-4xl font-display font-bold text-foreground">Galleries</h1>
+          <p className="text-muted-foreground mt-1 font-medium">Manage and share your photo collections.</p>
         </div>
         <CreateGalleryDialog />
       </div>
@@ -91,44 +105,70 @@ export default function GalleryList() {
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       ) : galleries?.length === 0 ? (
-        <div className="text-center py-24 bg-white rounded-3xl border border-dashed border-border/60">
-          <div className="h-16 w-16 bg-muted rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <ImageIcon className="h-8 w-8 text-muted-foreground" />
+        <div className="text-center py-32 bg-white rounded-[2rem] border border-dashed border-border/60 shadow-sm">
+          <div className="h-20 w-20 bg-muted rounded-3xl flex items-center justify-center mx-auto mb-6">
+            <ImageIcon className="h-10 w-10 text-muted-foreground" />
           </div>
-          <h3 className="text-lg font-semibold">No galleries yet</h3>
-          <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
+          <h3 className="text-xl font-display font-bold">No galleries yet</h3>
+          <p className="text-muted-foreground mb-8 max-w-sm mx-auto font-medium">
             Create your first gallery to start uploading photos and sharing them with clients.
           </p>
           <CreateGalleryDialog />
         </div>
       ) : (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
           {galleries?.map((gallery) => (
-            <Link key={gallery.id} href={`/galleries/${gallery.id}`}>
-              <div className="group relative bg-white rounded-2xl border p-5 hover-card-effect cursor-pointer">
-                <div className="aspect-[3/2] bg-muted/30 rounded-xl mb-4 flex items-center justify-center overflow-hidden">
-                  <ImageIcon className="h-10 w-10 text-muted-foreground/30 group-hover:scale-110 transition-transform duration-300" />
-                  {/* Real implementation would show a thumbnail here */}
+            <div key={gallery.id} className="group relative bg-white rounded-[1.5rem] border shadow-sm hover:shadow-xl hover:scale-[1.01] transition-all duration-300 flex flex-col">
+              <Link href={`/galleries/${gallery.id}`} className="flex-1 p-6 cursor-pointer">
+                <div className="aspect-[3/2] bg-neutral-100 rounded-xl mb-6 flex items-center justify-center overflow-hidden relative">
+                  <ImageIcon className="h-12 w-12 text-neutral-300 group-hover:scale-110 transition-transform duration-500" />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors" />
                 </div>
                 
                 <div className="flex justify-between items-start">
                   <div>
-                    <h3 className="font-semibold text-lg leading-tight group-hover:text-primary transition-colors">
+                    <h3 className="font-display font-bold text-xl leading-tight text-foreground group-hover:text-primary transition-colors">
                       {gallery.title}
                     </h3>
-                    <p className="text-sm text-muted-foreground mt-1">{gallery.clientName}</p>
-                  </div>
-                  <div className="h-8 w-8 rounded-full bg-primary/5 text-primary flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <ArrowRight className="h-4 w-4" />
+                    <p className="text-sm text-muted-foreground mt-1 font-medium">{gallery.clientName}</p>
                   </div>
                 </div>
-                
-                <div className="mt-4 pt-4 border-t flex items-center justify-between text-xs text-muted-foreground">
-                  <span>{new Date(gallery.createdAt).toLocaleDateString()}</span>
-                  <span className="font-medium px-2 py-0.5 bg-secondary rounded-full">Active</span>
+              </Link>
+
+              <div className="px-6 pb-6 mt-auto">
+                <div className="pt-4 border-t flex items-center justify-between">
+                  <span className="text-xs font-medium text-muted-foreground">{new Date(gallery.createdAt).toLocaleDateString()}</span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 bg-green-50 text-green-600 rounded-full border border-green-100">Active</span>
+                  </div>
                 </div>
               </div>
-            </Link>
+
+              {/* 3-Dot Menu */}
+              <div className="absolute top-4 right-4 z-10">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full bg-white/80 backdrop-blur-md shadow-sm border opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48 rounded-xl shadow-xl p-1 border-border/50">
+                    <DropdownMenuItem onClick={() => setLocation(`/galleries/${gallery.id}`)} className="rounded-lg gap-2 cursor-pointer font-medium py-2">
+                      <Edit2 className="h-4 w-4" /> Quick Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setLocation(`/galleries/${gallery.id}`)} className="rounded-lg gap-2 cursor-pointer font-medium py-2">
+                      <Share2 className="h-4 w-4" /> Share
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => deleteGallery(gallery.id)}
+                      className="rounded-lg gap-2 cursor-pointer font-medium py-2 text-destructive focus:text-destructive focus:bg-destructive/5"
+                    >
+                      <Trash2 className="h-4 w-4" /> Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </div>
           ))}
         </div>
       )}
