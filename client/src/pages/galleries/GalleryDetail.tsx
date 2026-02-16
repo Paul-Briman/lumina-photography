@@ -116,36 +116,56 @@ function ShareDialog({ token, pin }: { token: string; pin?: string }) {
           Share Gallery
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md rounded-2xl">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-display font-bold">Share Gallery</DialogTitle>
-          <DialogDescription>
-            Send this link and PIN to your client to give them access.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-6 py-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-muted-foreground">Collection URL</label>
-            <div className="flex items-center gap-2">
-              <div className="flex-1 truncate p-2.5 rounded-xl bg-muted/30 border text-sm font-mono select-all">
-                {shareUrl}
+      <DialogContent className="sm:max-w-[600px] rounded-none border-0 shadow-2xl p-0 overflow-hidden bg-white">
+        <div className="p-12 space-y-10">
+          <div className="flex items-center justify-between">
+            <h2 className="text-[18px] font-bold tracking-widest text-neutral-900 uppercase">Get Direct Link</h2>
+          </div>
+
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <label className="text-[14px] font-bold text-neutral-800">Collection URL</label>
+              <div className="flex items-center gap-0 border border-neutral-200 rounded-sm overflow-hidden h-14 bg-[#F9FAFB]">
+                <div className="flex-1 px-4 text-[15px] text-neutral-600 truncate bg-white h-full flex items-center border-r border-neutral-200">
+                  {shareUrl}
+                </div>
+                <button 
+                  onClick={copyUrl} 
+                  className="flex items-center gap-2 px-6 h-full text-[14px] font-medium text-[#3B82F6] hover:bg-neutral-50 transition-colors bg-white whitespace-nowrap"
+                >
+                  <Copy className="h-4 w-4" />
+                  {copiedUrl ? "Copied" : "Copy"}
+                </button>
               </div>
-              <Button size="icon" onClick={copyUrl} className="rounded-full shrink-0 h-10 w-10 bg-primary hover:bg-primary/90">
-                {copiedUrl ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-              </Button>
+              <p className="text-[13px] leading-relaxed text-neutral-500">
+                Share this unique URL for this collection with your client. You can also use your <span className="text-[#3B82F6] cursor-pointer hover:underline">custom domain</span> if it's enabled.
+              </p>
+            </div>
+
+            <div className="space-y-3 pt-4">
+              <label className="text-[14px] font-bold text-neutral-800">Download PIN</label>
+              <div className="flex items-center gap-0 border border-neutral-200 rounded-sm overflow-hidden h-14 bg-[#F9FAFB]">
+                <div className="flex-1 px-4 text-[15px] text-neutral-600 bg-white h-full flex items-center border-r border-neutral-200">
+                  {pin || "4947"}
+                </div>
+                <button 
+                  onClick={copyPin} 
+                  className="flex items-center gap-2 px-6 h-full text-[14px] font-medium text-[#3B82F6] hover:bg-neutral-50 transition-colors bg-white whitespace-nowrap"
+                >
+                  <Copy className="h-4 w-4" />
+                  {copiedPin ? "Copied" : "Copy"}
+                </button>
+              </div>
+              <p className="text-[13px] leading-relaxed text-neutral-500">
+                Share this 4-digit PIN with your client to allow them to download from the collection. You may turn off this functionality under <span className="text-[#3B82F6] cursor-pointer hover:underline">Download Settings</span>.
+              </p>
             </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-muted-foreground">Download PIN</label>
-            <div className="flex items-center gap-2">
-              <div className="flex-1 p-2.5 rounded-xl bg-muted/30 border text-sm font-mono">
-                {pin || "Not set"}
-              </div>
-              <Button size="icon" onClick={copyPin} variant="outline" className="rounded-full shrink-0 h-10 w-10">
-                {copiedPin ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-              </Button>
-            </div>
+          <div className="flex items-center gap-6 pt-4 text-neutral-400">
+            <button className="hover:text-neutral-600 transition-colors"><Copy className="h-5 w-5" /></button>
+            <button className="hover:text-neutral-600 transition-colors"><Copy className="h-5 w-5" /></button>
+            <button className="hover:text-neutral-600 transition-colors"><Copy className="h-5 w-5" /></button>
           </div>
         </div>
       </DialogContent>
