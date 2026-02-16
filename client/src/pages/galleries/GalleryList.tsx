@@ -116,28 +116,28 @@ export default function GalleryList() {
           <CreateGalleryDialog />
         </div>
       ) : (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="flex flex-wrap gap-8 justify-start">
           {galleries?.map((gallery) => (
-            <div key={gallery.id} className="group relative bg-white rounded-[1.5rem] border shadow-sm hover:shadow-xl hover:scale-[1.01] transition-all duration-300 flex flex-col">
-              <Link href={`/galleries/${gallery.id}`} className="flex-1 p-6 cursor-pointer">
-                <div className="aspect-[3/2] bg-neutral-100 rounded-xl mb-6 flex items-center justify-center overflow-hidden relative">
-                  <ImageIcon className="h-12 w-12 text-neutral-300 group-hover:scale-110 transition-transform duration-500" />
+            <div key={gallery.id} className="group relative bg-white rounded-xl border shadow-sm hover:shadow-md transition-all duration-300 flex flex-col w-[280px]">
+              <Link href={`/galleries/${gallery.id}`} className="flex-1 p-4 cursor-pointer">
+                <div className="aspect-[3/2] bg-neutral-100 rounded-lg mb-4 flex items-center justify-center overflow-hidden relative">
+                  <ImageIcon className="h-10 w-10 text-neutral-300 group-hover:scale-110 transition-transform duration-500" />
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors" />
                 </div>
                 
                 <div className="flex justify-between items-start">
                   <div>
-                    <h3 className="font-display font-bold text-xl leading-tight text-foreground group-hover:text-primary transition-colors">
+                    <h3 className="font-display font-bold text-base leading-tight text-foreground group-hover:text-primary transition-colors">
                       {gallery.title}
                     </h3>
-                    <p className="text-sm text-muted-foreground mt-1 font-medium">{gallery.clientName}</p>
+                    <p className="text-sm text-muted-foreground mt-1 regular">{gallery.clientName}</p>
                   </div>
                 </div>
               </Link>
 
-              <div className="px-6 pb-6 mt-auto">
-                <div className="pt-4 border-t flex items-center justify-between">
-                  <span className="text-xs font-medium text-muted-foreground">{new Date(gallery.createdAt).toLocaleDateString()}</span>
+              <div className="px-4 pb-4 mt-auto">
+                <div className="pt-3 border-t flex items-center justify-between">
+                  <span className="text-[12px] text-muted-foreground">{new Date(gallery.createdAt).toLocaleDateString()}</span>
                   <div className="flex items-center gap-1">
                     <span className="text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 bg-green-50 text-green-600 rounded-full border border-green-100">Active</span>
                   </div>
@@ -145,23 +145,28 @@ export default function GalleryList() {
               </div>
 
               {/* 3-Dot Menu */}
-              <div className="absolute top-4 right-4 z-10">
-                <DropdownMenu>
+              <div className="absolute top-3 right-3 z-10">
+                <DropdownMenu modal={false}>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full bg-white/80 backdrop-blur-md shadow-sm border opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-md bg-white/80 backdrop-blur-md shadow-sm border opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white">
                       <MoreVertical className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48 rounded-xl shadow-xl p-1 border-border/50">
-                    <DropdownMenuItem onClick={() => setLocation(`/galleries/${gallery.id}`)} className="rounded-lg gap-2 cursor-pointer font-medium py-2">
-                      <Edit2 className="h-4 w-4" /> Quick Edit
+                  <DropdownMenuContent 
+                    align="end" 
+                    side="bottom"
+                    sideOffset={8}
+                    className="w-48 rounded-lg shadow-xl p-1 border-border/50 bg-white z-[100]"
+                  >
+                    <DropdownMenuItem onClick={() => setLocation(`/galleries/${gallery.id}`)} className="rounded-md gap-2 cursor-pointer font-medium py-2">
+                      <Edit2 className="h-4 w-4" /> Quick edit
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setLocation(`/galleries/${gallery.id}`)} className="rounded-lg gap-2 cursor-pointer font-medium py-2">
+                    <DropdownMenuItem onClick={() => setLocation(`/galleries/${gallery.id}`)} className="rounded-md gap-2 cursor-pointer font-medium py-2">
                       <Share2 className="h-4 w-4" /> Share
                     </DropdownMenuItem>
                     <DropdownMenuItem 
                       onClick={() => deleteGallery(gallery.id)}
-                      className="rounded-lg gap-2 cursor-pointer font-medium py-2 text-destructive focus:text-destructive focus:bg-destructive/5"
+                      className="rounded-md gap-2 cursor-pointer font-medium py-2 text-destructive focus:text-destructive focus:bg-destructive/5"
                     >
                       <Trash2 className="h-4 w-4" /> Delete
                     </DropdownMenuItem>
