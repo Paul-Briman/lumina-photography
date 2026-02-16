@@ -5,10 +5,11 @@ import { useGallery, useUploadPhotos } from "@/hooks/use-galleries";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Loader2, Share2, UploadCloud, ChevronLeft, Image as ImageIcon, Copy, Check } from "lucide-react";
+import { Loader2, Share2, UploadCloud, ChevronLeft, Image as ImageIcon, Copy, Check, MoreVertical, Maximize2, Download, Image as ImageControl, RefreshCw, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 function UploadDialog({ galleryId }: { galleryId: number }) {
   const [open, setOpen] = useState(false);
@@ -216,6 +217,51 @@ export default function GalleryDetail() {
                 className="w-full h-full object-cover"
               />
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+              
+              {/* Photo Options Menu */}
+              <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                <DropdownMenu modal={false}>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full bg-white/90 backdrop-blur-md shadow-md border-0 hover:bg-white text-neutral-600">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-52 rounded-xl shadow-2xl p-1 border-neutral-100 bg-white">
+                    <DropdownMenuItem 
+                      onClick={() => console.log("Open photo", photo.id)}
+                      className="rounded-lg gap-3 cursor-pointer font-medium py-2.5 px-4 text-neutral-700 hover:bg-neutral-50"
+                    >
+                      <Maximize2 className="h-4 w-4 text-neutral-400" /> Open
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => console.log("Download photo", photo.id)}
+                      className="rounded-lg gap-3 cursor-pointer font-medium py-2.5 px-4 text-neutral-700 hover:bg-neutral-50"
+                    >
+                      <Download className="h-4 w-4 text-neutral-400" /> Download
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => console.log("Set as cover", photo.id)}
+                      className="rounded-lg gap-3 cursor-pointer font-medium py-2.5 px-4 text-neutral-700 hover:bg-neutral-50"
+                    >
+                      <ImageControl className="h-4 w-4 text-neutral-400" /> Set as cover
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => console.log("Replace photo", photo.id)}
+                      className="rounded-lg gap-3 cursor-pointer font-medium py-2.5 px-4 text-neutral-700 hover:bg-neutral-50"
+                    >
+                      <RefreshCw className="h-4 w-4 text-neutral-400" /> Replace photo
+                    </DropdownMenuItem>
+                    <div className="my-1 border-t border-neutral-100" />
+                    <DropdownMenuItem 
+                      onClick={() => console.log("Delete photo", photo.id)}
+                      className="rounded-lg gap-3 cursor-pointer font-medium py-2.5 px-4 text-destructive hover:bg-destructive/5"
+                    >
+                      <Trash2 className="h-4 w-4" /> Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+
               <div className="absolute bottom-3 left-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
                 <p className="text-[10px] text-white font-medium truncate bg-black/40 backdrop-blur-sm px-2 py-1 rounded-md">
                   {photo.filename}
