@@ -1,3 +1,39 @@
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import fs from 'fs'; // Add this import
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Debug the path
+const envPath = path.resolve(__dirname, '../.env');
+console.log('🔍 Looking for .env at:', envPath);
+console.log('📁 Current directory:', process.cwd());
+console.log('📁 __dirname:', __dirname);
+
+// Check if file exists
+if (fs.existsSync(envPath)) {
+  console.log('✅ .env file found!');
+  const envContent = fs.readFileSync(envPath, 'utf8');
+  console.log('📄 .env content (first 100 chars):', envContent.substring(0, 100));
+} else {
+  console.log('❌ .env file NOT found at this path');
+  
+  // Try alternative paths
+  const altPath1 = path.resolve(process.cwd(), '.env');
+  const altPath2 = path.resolve(__dirname, '.env');
+  
+  console.log('Checking alternatives:');
+  console.log('  Alt1 (cwd):', altPath1, fs.existsSync(altPath1) ? '✅ FOUND' : '❌');
+  console.log('  Alt2 (same dir):', altPath2, fs.existsSync(altPath2) ? '✅ FOUND' : '❌');
+}
+
+// Load environment variables
+dotenv.config({ path: envPath });
+
+// Rest of your imports...
+
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
@@ -89,15 +125,8 @@ app.use((req, res, next) => {
   // Other ports are firewalled. Default to 5000 if not specified.
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
-  const port = parseInt(process.env.PORT || "5000", 10);
-  httpServer.listen(
-    {
-      port,
-      host: "0.0.0.0",
-      reusePort: true,
-    },
-    () => {
-      log(`serving on port ${port}`);
-    },
-  );
+  const port = parseInt(process.env.PORT || "8080", 10);
+httpServer.listen(port, "127.0.0.1", () => {
+  log(`serving on port ${port}`);
+});
 })();

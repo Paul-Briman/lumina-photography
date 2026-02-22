@@ -8,8 +8,8 @@ type AuthContextType = {
   user: AuthResponse["user"] | null;
   token: string | null;
   isLoading: boolean;
-  login: (data: LoginRequest) => void;
-  register: (data: RegisterRequest) => void;
+  login: (data: LoginRequest) => Promise<AuthResponse>;
+  register: (data: RegisterRequest) => Promise<AuthResponse>;
   logout: () => void;
 };
 
@@ -107,8 +107,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user, 
         token, 
         isLoading,
-        login: loginMutation.mutate, 
-        register: registerMutation.mutate, 
+        login: loginMutation.mutateAsync,
+        register: registerMutation.mutateAsync,
         logout 
       }}
     >

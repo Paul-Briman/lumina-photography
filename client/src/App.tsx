@@ -8,9 +8,9 @@ import Login from "@/pages/auth/Login";
 import Register from "@/pages/auth/Register";
 import GalleryList from "@/pages/galleries/GalleryList";
 import GalleryDetail from "@/pages/galleries/GalleryDetail";
-import InvoiceList from "@/pages/invoices/InvoiceList";
-import SharedGallery from "@/pages/public/SharedGallery";
+import CreateInvoice from "@/pages/invoices/CreateInvoice";
 import NotFound from "@/pages/not-found";
+import ClientGallery from "@/pages/ClientGallery";
 
 function Router() {
   return (
@@ -18,12 +18,13 @@ function Router() {
       {/* Public Routes */}
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
-      <Route path="/share/:token" component={SharedGallery} />
+      <Route path="/share/:token" component={ClientGallery} /> 
       
       {/* Protected Routes */}
       <Route path="/galleries" component={GalleryList} />
       <Route path="/galleries/:id" component={GalleryDetail} />
-      <Route path="/invoices" component={InvoiceList} />
+      <Route path="/invoices" component={CreateInvoice} />
+      <Route path="/invoices/new" component={CreateInvoice} />
       
       {/* Redirect root to galleries (which will redirect to login if needed) */}
       <Route path="/">
