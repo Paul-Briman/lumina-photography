@@ -143,7 +143,16 @@ app.use((req, res, next) => {
   const port = parseInt(process.env.PORT || "8080", 10);
   console.log(`📡 Attempting to start server on port: ${port}`);
   
-  httpServer.listen(port, "127.0.0.1", () => {
-    log(`serving on port ${port}`);
+  // IMPORTANT: Listen on 0.0.0.0 in production for cloud platforms
+  const host = process.env.NODE_ENV === "production" ? "0.0.0.0" : "127.0.0.1";
+  
+  httpServer.listen(port, host, () => {
+    log(`serving on port ${port} on ${host}`);
+  });
+
+  // Add error handler
+  httpServer.on('error', (error) => {
+    console.error('❌ Server error:', error);
+    process.exit(1);
   });
 })();
