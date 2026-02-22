@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useParams } from "wouter";
 import { useSharedGallery } from "@/hooks/use-galleries";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,76 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Lightbox } from "@/components/ui/lightbox";
+
+// Animation styles - ONLY ADDITION
+const animationStyles = `
+  @keyframes fadeInScale {
+    0% {
+      opacity: 0;
+      transform: scale(1.05);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  
+  @keyframes slideUpFade {
+    0% {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  @keyframes letterGlow {
+    0%, 100% {
+      text-shadow: 0 0 15px rgba(255,255,255,0.2);
+    }
+    50% {
+      text-shadow: 0 0 30px rgba(255,255,255,0.5);
+    }
+  }
+  
+  @keyframes softPulse {
+    0%, 100% {
+      opacity: 0.9;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.03);
+    }
+  }
+  
+  .animate-fade-scale {
+    animation: fadeInScale 1.2s ease-out forwards;
+  }
+  
+  .animate-slide-up {
+    opacity: 0;
+    animation: slideUpFade 0.8s ease-out forwards;
+  }
+  
+  .animate-delay-1 {
+    animation-delay: 0.2s;
+  }
+  
+  .animate-delay-2 {
+    animation-delay: 0.4s;
+  }
+  
+  .animate-letter-glow {
+    animation: letterGlow 3s ease-in-out infinite;
+  }
+  
+  .animate-soft-pulse {
+    animation: softPulse 2s ease-in-out infinite;
+  }
+`;
 
 // Define the Photo type inline since we know its structure
 interface Photo {
@@ -49,6 +119,16 @@ export default function ClientGallery() {
 
   // Ref for scrolling to gallery
   const galleryRef = useRef<HTMLDivElement>(null);
+
+  // Add animation styles - ONLY ADDITION
+  useEffect(() => {
+    const styleSheet = document.createElement("style");
+    styleSheet.textContent = animationStyles;
+    document.head.appendChild(styleSheet);
+    return () => {
+      document.head.removeChild(styleSheet);
+    };
+  }, []);
 
   const handleVerifyPin = () => {
     if (!gallery) return;
@@ -88,7 +168,19 @@ export default function ClientGallery() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = photo.filename;
+
+      // Fix the file extension
+      let filename = photo.filename;
+      // If it ends with .jfif, change to .jpg
+      if (filename.toLowerCase().endsWith(".jfif")) {
+        filename = filename.replace(/\.jfif$/i, ".jpg");
+      }
+      // If it has no extension or weird extension, add .jpg
+      if (!filename.includes(".")) {
+        filename = filename + ".jpg";
+      }
+
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -112,21 +204,29 @@ export default function ClientGallery() {
         selectedPhotos.has(p.id),
       );
 
-      // Download each photo individually with a small delay
       for (let i = 0; i < selectedPhotosList.length; i++) {
         const photo = selectedPhotosList[i];
-        
-        // Add delay between downloads to prevent browser blocking
+
         if (i > 0) {
-          await new Promise(resolve => setTimeout(resolve, 500));
+          await new Promise((resolve) => setTimeout(resolve, 500));
         }
-        
+
         const response = await fetch(photo.storagePath);
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = photo.filename;
+
+        // Fix the file extension
+        let filename = photo.filename;
+        if (filename.toLowerCase().endsWith(".jfif")) {
+          filename = filename.replace(/\.jfif$/i, ".jpg");
+        }
+        if (!filename.includes(".")) {
+          filename = filename + ".jpg";
+        }
+
+        a.download = filename;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -294,7 +394,7 @@ export default function ClientGallery() {
 
       {/* Hero Section */}
       <div className="relative h-screen w-full overflow-hidden">
-        <div className="absolute inset-0">
+        <div className="absolute inset-0 animate-fade-scale">
           <img
             src={heroImageUrl}
             alt="Hero Background"
@@ -305,7 +405,7 @@ export default function ClientGallery() {
 
         <div className="relative z-10 h-full flex flex-col items-center justify-center text-white px-4 sm:px-6">
           <h1
-            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold text-center mb-4 sm:mb-6"
+            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold text-center mb-4 sm:mb-6 animate-slide-up"
             style={{
               fontFamily: "Arial, Helvetica, sans-serif",
               letterSpacing: "0.5px",
@@ -314,7 +414,7 @@ export default function ClientGallery() {
             P H O T O <span style={{ margin: "0 0.3em" }} /> A S S E T
           </h1>
           <p
-            className="text-xl sm:text-2xl md:text-3xl lg:text-4xl mb-6 sm:mb-8 md:mb-10 text-center italic px-2"
+            className="text-xl sm:text-2xl md:text-3xl lg:text-4xl mb-6 sm:mb-8 md:mb-10 text-center italic px-2 animate-slide-up animate-delay-1"
             style={{
               fontFamily: "DM Serif Display, Georgia, Times New Roman, serif",
               fontStyle: "italic",
@@ -325,7 +425,7 @@ export default function ClientGallery() {
           </p>
           <button
             onClick={scrollToGallery}
-            className="px-6 sm:px-8 py-2 sm:py-3 bg-transparent border border-white text-white rounded-full hover:bg-white hover:text-black transition-all duration-300 text-sm sm:text-base tracking-wider font-medium"
+            className="px-6 sm:px-8 py-2 sm:py-3 bg-transparent border border-white text-white rounded-full hover:bg-white hover:text-black transition-all duration-300 text-sm sm:text-base tracking-wider font-medium animate-slide-up animate-delay-2 hover:animate-soft-pulse"
           >
             VIEW GALLERY
           </button>

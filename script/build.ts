@@ -1,7 +1,8 @@
 import { build as esbuild } from "esbuild";
 import { build as viteBuild } from "vite";
 import { rm, readFile } from "fs/promises";
-
+import fs from 'fs';
+import path from 'path';
 // server deps to bundle to reduce openat(2) syscalls
 // which helps cold start times
 const allowlist = [
@@ -59,6 +60,15 @@ async function buildAll() {
     external: externals,
     logLevel: "info",
   });
+
+  // Copy .env to dist folder - MOVED INSIDE THE FUNCTION
+  const envPath = path.resolve(process.cwd(), '.env');
+  if (fs.existsSync(envPath)) {
+    fs.copyFileSync(envPath, path.resolve(process.cwd(), 'dist/.env'));
+    console.log('✅ .env copied to dist');
+  } else {
+    console.log('⚠️  No .env file found, skipping copy');
+  }
 }
 
 buildAll().catch((err) => {
