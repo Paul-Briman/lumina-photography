@@ -62,13 +62,23 @@ async function buildAll() {
     logLevel: "info",
   });
 
-  // Copy .env to dist folder - MOVED INSIDE THE FUNCTION
+  // Copy .env to dist folder
   const envPath = path.resolve(process.cwd(), '.env');
   if (fs.existsSync(envPath)) {
     fs.copyFileSync(envPath, path.resolve(process.cwd(), 'dist/.env'));
     console.log('✅ .env copied to dist');
   } else {
     console.log('⚠️  No .env file found, skipping copy');
+  }
+
+  // ✅ COPY START.JS TO DIST - ADD THIS RIGHT HERE
+  const startJsPath = path.resolve(process.cwd(), 'server/start.js');
+  const distStartJsPath = path.resolve(process.cwd(), 'dist/start.js');
+  if (fs.existsSync(startJsPath)) {
+    fs.copyFileSync(startJsPath, distStartJsPath);
+    console.log('✅ start.js copied to dist');
+  } else {
+    console.log('⚠️  start.js not found, skipping copy');
   }
 }
 
