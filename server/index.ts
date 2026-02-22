@@ -1,38 +1,54 @@
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import fs from 'fs'; // Add this import
+import fs from 'fs';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+console.log("🚀 SERVER STARTING...");
+console.log("📁 Current directory:", process.cwd());
 
-// Debug the path
-const envPath = path.resolve(__dirname, '../.env');
-console.log('🔍 Looking for .env at:', envPath);
-console.log('📁 Current directory:', process.cwd());
-console.log('📁 __dirname:', __dirname);
+// Handle both ESM and CommonJS environments
+let currentFilename: string;
+let currentDirname: string;
+
+if (typeof import.meta !== 'undefined' && import.meta.url) {
+  // ESM environment (development)
+  currentFilename = fileURLToPath(import.meta.url);
+  currentDirname = path.dirname(currentFilename);
+  console.log("📁 Running in ESM mode (development)");
+} else {
+  // CommonJS environment (production)
+  currentFilename = __filename;
+  currentDirname = __dirname;
+  console.log("📁 Running in CommonJS mode (production)");
+}
+
+// Debug the path - looking for backend .env in root
+const envPath = path.resolve(currentDirname, '../.env');
+console.log('🔍 Looking for backend .env at:', envPath);
+console.log('📁 currentDirname:', currentDirname);
 
 // Check if file exists
 if (fs.existsSync(envPath)) {
-  console.log('✅ .env file found!');
+  console.log('✅ Backend .env file found!');
   const envContent = fs.readFileSync(envPath, 'utf8');
   console.log('📄 .env content (first 100 chars):', envContent.substring(0, 100));
 } else {
-  console.log('❌ .env file NOT found at this path');
+  console.log('❌ Backend .env file NOT found at this path');
   
   // Try alternative paths
   const altPath1 = path.resolve(process.cwd(), '.env');
-  const altPath2 = path.resolve(__dirname, '.env');
+  const altPath2 = path.resolve(currentDirname, '.env');
   
   console.log('Checking alternatives:');
   console.log('  Alt1 (cwd):', altPath1, fs.existsSync(altPath1) ? '✅ FOUND' : '❌');
   console.log('  Alt2 (same dir):', altPath2, fs.existsSync(altPath2) ? '✅ FOUND' : '❌');
 }
 
-// Load environment variables
+// Load environment variables from the correct path
 dotenv.config({ path: envPath });
 
-// Rest of your imports...
+console.log('🔥 PORT from env:', process.env.PORT);
+console.log('🔥 NODE_ENV:', process.env.NODE_ENV);
 
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
@@ -115,18 +131,19 @@ app.use((req, res, next) => {
   // setting up all the other routes so the catch-all route
   // doesn't interfere with the other routes
   if (process.env.NODE_ENV === "production") {
+    console.log("📡 Running in production mode, serving static files...");
     serveStatic(app);
   } else {
+    console.log("📡 Running in development mode, setting up Vite...");
     const { setupVite } = await import("./vite");
     await setupVite(httpServer, app);
   }
 
   // ALWAYS serve the app on the port specified in the environment variable PORT
-  // Other ports are firewalled. Default to 5000 if not specified.
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || "8080", 10);
-httpServer.listen(port, "127.0.0.1", () => {
-  log(`serving on port ${port}`);
-});
+  console.log(`📡 Attempting to start server on port: ${port}`);
+  
+  httpServer.listen(port, "127.0.0.1", () => {
+    log(`serving on port ${port}`);
+  });
 })();

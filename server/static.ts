@@ -4,25 +4,35 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 export function serveStatic(app: Express) {
-  // Get the directory name properly in ESM
-  const __filename = fileURLToPath(import.meta.url);
-  const __dirname = path.dirname(__filename);
+  let currentFilename: string;
+  let currentDirname: string;
 
-  // Go up one level from server/ to dist/public
-  const distPath = path.resolve(__dirname, "../dist/public");
-
-  console.log("📁 Serving static files from:", distPath);
-
-  if (!fs.existsSync(distPath)) {
-    throw new Error(
-      `Could not find the build directory: ${distPath}, make sure to build the client first`,
-    );
+  if (typeof import.meta !== 'undefined' && import.meta.url) {
+    // ESM environment (development)
+    currentFilename = fileURLToPath(import.meta.url);
+    currentDirname = path.dirname(currentFilename);
+  } else {
+    // CommonJS environment (production)
+    currentFilename = __filename;
+    currentDirname = __dirname;
   }
 
+  const distPath = path.resolve(currentDirname, "../dist/public");
+  console.log("📁 Serving static from:", distPath);
+
+  if (!fs.existsSync(distPath)) {
+    throw new Error(`Build directory not found: ${distPath}`);
+  }
+
+  // Serve static files first
   app.use(express.static(distPath));
 
-  // fall through to index.html if the file doesn't exist
-  app.use("/{*path}", (_req, res) => {
+  // Then handle all other routes with the SPA fallback - using NAMED wildcard
+  app.get("/*path", (req, res) => {
+    // Skip API routes
+    if (req.path.startsWith('/api')) {
+      return res.status(404).json({ message: "API route not found" });
+    }
     res.sendFile(path.resolve(distPath, "index.html"));
   });
 }
