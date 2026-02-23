@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,7 +40,7 @@ export default function CreateInvoice() {
     return date.toISOString().split('T')[0];
   });
   const [items, setItems] = useState<LineItem[]>([
-    { id: "1", description: "Wedding Photography", quantity: 1, price: 150000 }, // Changed to Naira
+    { id: "1", description: "Wedding Photography", quantity: 1, price: 150000 },
   ]);
   const [notes, setNotes] = useState("");
   const [taxRate, setTaxRate] = useState(0);
@@ -66,20 +66,33 @@ export default function CreateInvoice() {
     ));
   };
 
-  const calculateSubtotal = () => {
+  // Calculate subtotal using ONLY visible items (where quantity AND price are NOT both zero)
+  const calculateVisibleSubtotal = () => {
+    const visibleItems = hideZeroValues
+      ? items.filter(item => !(item.quantity === 0 && item.price === 0))
+      : items;
+    
+    return visibleItems.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+  };
+
+  const calculateVisibleTax = () => {
+    return calculateVisibleSubtotal() * (taxRate / 100);
+  };
+
+  const calculateVisibleTotal = () => {
+    return calculateVisibleSubtotal() + calculateVisibleTax();
+  };
+
+  // For form display (showing all items including zero ones)
+  const calculateAllSubtotal = () => {
     return items.reduce((sum, item) => sum + (item.quantity * item.price), 0);
-  };
-
-  const calculateTax = () => {
-    return calculateSubtotal() * (taxRate / 100);
-  };
-
-  const calculateTotal = () => {
-    return calculateSubtotal() + calculateTax();
   };
 
   const generatePDF = () => {
     const doc = new jsPDF();
+    
+    // Use "NGN" as currency code for PDF compatibility
+    const currency = "NGN";
     
     // Header with Business Name
     doc.setFontSize(20);
@@ -109,27 +122,25 @@ export default function CreateInvoice() {
     doc.text(clientCountry || "Country", 14, 84);
     doc.text(clientPhone || "Phone Number", 14, 90);
     
-    // Items table
-    const itemsForPDF = items.map(item => ({
-      ...item,
-      displayQty: hideZeroValues && item.quantity === 0 && item.price === 0 ? "" : item.quantity.toString(),
-      displayPrice: hideZeroValues && item.quantity === 0 && item.price === 0 ? "" : `₦${item.price.toLocaleString()}`,
-      displayAmount: hideZeroValues && item.quantity === 0 && item.price === 0 ? "" : `₦${(item.quantity * item.price).toLocaleString()}`
-    }));
-
+    // Items table - ALL rows shown, but zero values can be hidden
     autoTable(doc, {
       startY: 105,
-      head: [["Description", "Qty", "Price (₦)", "Amount (₦)"]],
-      body: itemsForPDF.map(item => [
-        item.description || "Item description",
-        item.displayQty,
-        item.displayPrice,
-        item.displayAmount
-      ]),
+      head: [["Description", "Qty", `Price (${currency})`, `Amount (${currency})`]],
+      body: items.map(item => {
+        const isZero = item.quantity === 0 && item.price === 0;
+        const hideValue = hideZeroValues && isZero;
+        
+        return [
+          item.description || "Item description",
+          hideValue ? "" : item.quantity.toString(),
+          hideValue ? "" : item.price.toLocaleString(),
+          hideValue ? "" : (item.quantity * item.price).toLocaleString()
+        ];
+      }),
       foot: [
-        ["", "", "Subtotal:", `₦${calculateSubtotal().toLocaleString()}`],
-        ["", "", `Tax (${taxRate}%):`, `₦${calculateTax().toLocaleString()}`],
-        ["", "", "Total:", `₦${calculateTotal().toLocaleString()}`],
+        ["", "", "Subtotal:", `${calculateVisibleSubtotal().toLocaleString()}`],
+        ["", "", `Tax (${taxRate}%):`, `${calculateVisibleTax().toLocaleString()}`],
+        ["", "", "Total:", `${calculateVisibleTotal().toLocaleString()}`],
       ],
       theme: "striped",
       headStyles: { fillColor: [59, 130, 246] },
@@ -156,7 +167,6 @@ export default function CreateInvoice() {
   };
 
   const saveDraft = () => {
-    // Here you would save to your backend
     toast({
       title: "Draft saved",
       description: "Invoice draft has been saved.",
@@ -327,8 +337,12 @@ export default function CreateInvoice() {
 
               <div className="mt-4 pt-4 border-t dark:border-neutral-700">
                 <div className="flex justify-between mb-2">
-                  <span>Subtotal:</span>
-                  <span className="font-medium">₦{calculateSubtotal().toLocaleString()}</span>
+                  <span>Subtotal (all items):</span>
+                  <span className="font-medium">₦{calculateAllSubtotal().toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between mb-2 text-sm text-muted-foreground">
+                  <span>Visible subtotal:</span>
+                  <span>₦{calculateVisibleSubtotal().toLocaleString()}</span>
                 </div>
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
@@ -340,11 +354,11 @@ export default function CreateInvoice() {
                       className="w-20 h-8"
                     />%
                   </div>
-                  <span className="font-medium">₦{calculateTax().toLocaleString()}</span>
+                  <span className="font-medium">₦{calculateVisibleTax().toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between text-lg font-bold">
                   <span>Total:</span>
-                  <span>₦{calculateTotal().toLocaleString()}</span>
+                  <span>₦{calculateVisibleTotal().toLocaleString()}</span>
                 </div>
               </div>
             </div>
@@ -398,14 +412,14 @@ export default function CreateInvoice() {
                   <p className="text-gray-600 text-sm">{clientPhone || "Phone Number"}</p>
                 </div>
 
-                {/* Items Table */}
+                {/* Items Table - Description always visible, values hidden when zero */}
                 <table className="w-full mb-8">
                   <thead>
                     <tr className="border-b border-gray-300">
                       <th className="text-left py-2 text-sm font-semibold text-gray-700">Description</th>
                       <th className="text-right py-2 text-sm font-semibold text-gray-700">Qty</th>
-                      <th className="text-right py-2 text-sm font-semibold text-gray-700">Price (₦)</th>
-                      <th className="text-right py-2 text-sm font-semibold text-gray-700">Amount (₦)</th>
+                      <th className="text-right py-2 text-sm font-semibold text-gray-700">Price (NGN)</th>
+                      <th className="text-right py-2 text-sm font-semibold text-gray-700">Amount (NGN)</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -417,13 +431,13 @@ export default function CreateInvoice() {
                         <tr key={item.id} className="border-b border-gray-200">
                           <td className="py-2 text-gray-800">{item.description || "Item description"}</td>
                           <td className="py-2 text-right text-gray-800">
-                            {hideValue ? "-" : item.quantity}
+                            {hideValue ? "" : item.quantity}
                           </td>
                           <td className="py-2 text-right text-gray-800">
-                            {hideValue ? "-" : `₦${item.price.toLocaleString()}`}
+                            {hideValue ? "" : item.price.toLocaleString()}
                           </td>
                           <td className="py-2 text-right text-gray-800">
-                            {hideValue ? "-" : `₦${(item.quantity * item.price).toLocaleString()}`}
+                            {hideValue ? "" : (item.quantity * item.price).toLocaleString()}
                           </td>
                         </tr>
                       );
@@ -436,15 +450,15 @@ export default function CreateInvoice() {
                   <div className="w-64">
                     <div className="flex justify-between py-1">
                       <span className="text-gray-600">Subtotal:</span>
-                      <span className="font-medium">₦{calculateSubtotal().toLocaleString()}</span>
+                      <span className="font-medium">{calculateVisibleSubtotal().toLocaleString()} NGN</span>
                     </div>
                     <div className="flex justify-between py-1">
                       <span className="text-gray-600">Tax ({taxRate}%):</span>
-                      <span className="font-medium">₦{calculateTax().toLocaleString()}</span>
+                      <span className="font-medium">{calculateVisibleTax().toLocaleString()} NGN</span>
                     </div>
                     <div className="flex justify-between py-2 border-t border-gray-300 font-bold">
                       <span>Total:</span>
-                      <span>₦{calculateTotal().toLocaleString()}</span>
+                      <span>{calculateVisibleTotal().toLocaleString()} NGN</span>
                     </div>
                   </div>
                 </div>
