@@ -1,4 +1,3 @@
-import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
@@ -22,30 +21,44 @@ if (typeof import.meta !== 'undefined' && import.meta.url) {
   console.log("📁 Running in CommonJS mode (production)");
 }
 
-// Debug the path - looking for backend .env in root
-const envPath = path.resolve(currentDirname, '../.env');
-console.log('🔍 Looking for backend .env at:', envPath);
-console.log('📁 currentDirname:', currentDirname);
+// Only load .env in development
+if (process.env.NODE_ENV !== 'production') {
+  // Dynamically import dotenv only in development
+  import('dotenv').then(dotenv => {
+    // Debug the path - looking for backend .env in root
+    const envPath = path.resolve(currentDirname, '../.env');
+    console.log('🔍 Looking for backend .env at:', envPath);
+    console.log('📁 currentDirname:', currentDirname);
 
-// Check if file exists
-if (fs.existsSync(envPath)) {
-  console.log('✅ Backend .env file found!');
-  const envContent = fs.readFileSync(envPath, 'utf8');
-  console.log('📄 .env content (first 100 chars):', envContent.substring(0, 100));
+    // Check if file exists
+    if (fs.existsSync(envPath)) {
+      console.log('✅ Backend .env file found!');
+      const envContent = fs.readFileSync(envPath, 'utf8');
+      console.log('📄 .env content (first 100 chars):', envContent.substring(0, 100));
+      dotenv.config({ path: envPath });
+    } else {
+      console.log('❌ Backend .env file NOT found at this path');
+      
+      // Try alternative paths
+      const altPath1 = path.resolve(process.cwd(), '.env');
+      const altPath2 = path.resolve(currentDirname, '.env');
+      
+      console.log('Checking alternatives:');
+      console.log('  Alt1 (cwd):', altPath1, fs.existsSync(altPath1) ? '✅ FOUND' : '❌');
+      console.log('  Alt2 (same dir):', altPath2, fs.existsSync(altPath2) ? '✅ FOUND' : '❌');
+      
+      if (fs.existsSync(altPath1)) {
+        dotenv.config({ path: altPath1 });
+      } else if (fs.existsSync(altPath2)) {
+        dotenv.config({ path: altPath2 });
+      }
+    }
+  }).catch(err => {
+    console.log('⚠️ Could not load dotenv (development only)');
+  });
 } else {
-  console.log('❌ Backend .env file NOT found at this path');
-  
-  // Try alternative paths
-  const altPath1 = path.resolve(process.cwd(), '.env');
-  const altPath2 = path.resolve(currentDirname, '.env');
-  
-  console.log('Checking alternatives:');
-  console.log('  Alt1 (cwd):', altPath1, fs.existsSync(altPath1) ? '✅ FOUND' : '❌');
-  console.log('  Alt2 (same dir):', altPath2, fs.existsSync(altPath2) ? '✅ FOUND' : '❌');
+  console.log('📡 Production mode - using environment variables from Render');
 }
-
-// Load environment variables from the correct path
-dotenv.config({ path: envPath });
 
 console.log('🔥 PORT from env:', process.env.PORT);
 console.log('🔥 NODE_ENV:', process.env.NODE_ENV);
