@@ -3,10 +3,11 @@ import { build as viteBuild } from "vite";
 import { rm, readFile } from "fs/promises";
 import fs from 'fs';
 import path from 'path';
+
 // server deps to bundle to reduce openat(2) syscalls
 // which helps cold start times
 const allowlist = [
-  "better-sqlite3",
+  "postgres", // Added PostgreSQL driver
   "@google/generative-ai",
   "axios",
   "connect-pg-simple",
@@ -69,16 +70,6 @@ async function buildAll() {
     console.log('✅ .env copied to dist');
   } else {
     console.log('⚠️  No .env file found, skipping copy');
-  }
-
-  // ✅ COPY START.JS TO DIST - ADD THIS RIGHT HERE
-  const startJsPath = path.resolve(process.cwd(), 'server/start.js');
-  const distStartJsPath = path.resolve(process.cwd(), 'dist/start.js');
-  if (fs.existsSync(startJsPath)) {
-    fs.copyFileSync(startJsPath, distStartJsPath);
-    console.log('✅ start.js copied to dist');
-  } else {
-    console.log('⚠️  start.js not found, skipping copy');
   }
 }
 

@@ -1,60 +1,49 @@
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import { pgTable, serial, text, integer, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// POSTGRESQL MIGRATION GUIDE:
-// 1. Uncomment the PG imports below and remove sqlite imports
-// import { pgTable, text, serial, integer, boolean, timestamp } from "drizzle-orm/pg-core";
-// 2. Replace sqliteTable with pgTable
-// 3. Replace integer('id').primaryKey({ autoIncrement: true }) with serial('id').primaryKey()
-// 4. Replace integer('created_at', { mode: 'timestamp' }) with timestamp('created_at').defaultNow()
-
-export const photographers = sqliteTable("photographers", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+// Photographers table
+export const photographers = pgTable("photographers", {
+  id: serial("id").primaryKey(),
   email: text("email").notNull().unique(),
   businessName: text("business_name").notNull(),
   passwordHash: text("password_hash").notNull(),
   resetToken: text("reset_token"),
-  resetTokenExpiry: integer("reset_token_expiry", { mode: "timestamp" }),
-  createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(
-    () => new Date(),
-  ),
+  resetTokenExpiry: timestamp("reset_token_expiry"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const galleries = sqliteTable("galleries", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
-  photographerId: integer("photographer_id").notNull(),
+// Galleries table
+export const galleries = pgTable("galleries", {
+  id: serial("id").primaryKey(),
+  photographerId: integer("photographer_id").notNull().references(() => photographers.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
   clientName: text("client_name").notNull(),
   shareToken: text("share_token").notNull().unique(),
   downloadPin: text("download_pin"),
   coverPhotoId: integer("cover_photo_id"),
-  createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(
-    () => new Date(),
-  ),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const photos = sqliteTable("photos", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
-  galleryId: integer("gallery_id").notNull(),
+// Photos table
+export const photos = pgTable("photos", {
+  id: serial("id").primaryKey(),
+  galleryId: integer("gallery_id").notNull().references(() => galleries.id, { onDelete: "cascade" }),
   filename: text("filename").notNull(),
   storagePath: text("storage_path").notNull(),
   size: integer("size").notNull(),
-  createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(
-    () => new Date(),
-  ),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const invoices = sqliteTable("invoices", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
-  galleryId: integer("gallery_id").notNull(),
+// Invoices table
+export const invoices = pgTable("invoices", {
+  id: serial("id").primaryKey(),
+  galleryId: integer("gallery_id").notNull().references(() => galleries.id, { onDelete: "cascade" }),
   invoiceNumber: text("invoice_number").notNull(),
-  amount: integer("amount").notNull(), // stored in cents
-  status: text("status").notNull().default("pending"), // pending, paid, cancelled
+  amount: integer("amount").notNull(), // stored in cents/kobo
+  status: text("status").notNull().default("pending"),
   pdfPath: text("pdf_path"),
-  createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(
-    () => new Date(),
-  ),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 // Schemas
