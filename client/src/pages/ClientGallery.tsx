@@ -204,6 +204,7 @@ export default function ClientGallery() {
         selectedPhotos.has(p.id),
       );
 
+      // Download each photo sequentially with delay
       for (let i = 0; i < selectedPhotosList.length; i++) {
         const photo = selectedPhotosList[i];
 
@@ -231,11 +232,17 @@ export default function ClientGallery() {
         a.click();
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
+
+        // Update progress toast
+        toast({
+          title: "Downloading",
+          description: `Downloaded ${i + 1} of ${selectedPhotosList.length} photos`,
+        });
       }
 
       toast({
         title: "Success",
-        description: `${selectedPhotos.size} photos downloaded.`,
+        description: `${selectedPhotosList.length} photos downloaded.`,
       });
       setSelectedPhotos(new Set());
     } catch (error) {
@@ -256,8 +263,7 @@ export default function ClientGallery() {
   const handleDownloadAll = () => {
     if (!gallery || gallery.photos.length === 0) return;
     setSelectedPhotos(new Set(gallery.photos.map((p: Photo) => p.id)));
-    setPendingDownload({ type: "all" });
-    setShowPinDialog(true);
+    handleDownloadSelected(); // This will trigger the PIN dialog
   };
 
   const handleDownloadSelected = () => {
