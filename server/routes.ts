@@ -185,6 +185,11 @@ export async function registerRoutes(
     }
   });
 
+  // Health check endpoint for Render
+  app.get("/healthz", (req, res) => {
+    res.status(200).send("OK");
+  });
+
   // Gallery Routes
   app.get(api.galleries.list.path, authenticateToken, async (req, res) => {
     const userId = (req as any).user.id;
@@ -288,7 +293,6 @@ export async function registerRoutes(
     await storage.deleteGallery(galleryId);
     res.sendStatus(204);
   });
-  
 
   app.get(api.galleries.get.path, authenticateToken, async (req, res) => {
     const userId = (req as any).user.id;
