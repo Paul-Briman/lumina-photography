@@ -7,6 +7,7 @@ import path from 'path';
 // server deps to bundle to reduce openat(2) syscalls
 // which helps cold start times
 const allowlist = [
+  "bcryptjs",
   "postgres", // Added PostgreSQL driver
   "@google/generative-ai",
   "axios",
