@@ -49,7 +49,7 @@ import { queryClient } from "@/lib/queryClient";
 import { CloudinaryUpload } from "@/components/ui/cloudinary-upload";
 import { api } from "@shared/routes";
 
-// Lightbox Component
+// Lightbox Component with swipe support
 function Lightbox({
   isOpen,
   onClose,
@@ -64,7 +64,35 @@ function Lightbox({
   onIndexChange: (index: number) => void;
 }) {
   const [isLoading, setIsLoading] = useState(true);
+  const [touchStart, setTouchStart] = useState(0);
+  const [touchEnd, setTouchEnd] = useState(0);
   const { toast } = useToast();
+
+  // Minimum swipe distance required (in px)
+  const minSwipeDistance = 50;
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(0); // Reset touch end
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+    
+    if (isLeftSwipe && images.length > 1) {
+      handleNext();
+    } else if (isRightSwipe && images.length > 1) {
+      handlePrevious();
+    }
+  };
 
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -153,7 +181,12 @@ function Lightbox({
         </div>
       )}
 
-      <div className="max-w-[90vw] max-h-[90vh]">
+      <div
+        className="max-w-[90vw] max-h-[90vh]"
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+      >
         {isLoading && (
           <div className="w-12 h-12 border-4 border-white/20 border-t-white rounded-full animate-spin absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
         )}

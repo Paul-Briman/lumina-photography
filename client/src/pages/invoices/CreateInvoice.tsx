@@ -43,7 +43,7 @@ export default function CreateInvoice() {
     { id: "1", description: "Wedding Photography", quantity: 1, price: 150000 },
   ]);
   const [notes, setNotes] = useState("");
-  const [taxRate, setTaxRate] = useState(0);
+  const [discountRate, setDiscountRate] = useState(0); // Changed from taxRate to discountRate
   const [hideZeroValues, setHideZeroValues] = useState(true);
 
   const addItem = () => {
@@ -66,21 +66,18 @@ export default function CreateInvoice() {
     ));
   };
 
-  // Calculate subtotal using ONLY visible items (where quantity AND price are NOT both zero)
-  const calculateVisibleSubtotal = () => {
-    const visibleItems = hideZeroValues
-      ? items.filter(item => !(item.quantity === 0 && item.price === 0))
-      : items;
-    
-    return visibleItems.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+  const calculateSubtotal = () => {
+    return items.reduce((sum, item) => sum + (item.quantity * item.price), 0);
   };
 
-  const calculateVisibleTax = () => {
-    return calculateVisibleSubtotal() * (taxRate / 100);
+  // Changed from calculateTax to calculateDiscount (subtracts from total)
+  const calculateDiscount = () => {
+    return calculateSubtotal() * (discountRate / 100);
   };
 
-  const calculateVisibleTotal = () => {
-    return calculateVisibleSubtotal() + calculateVisibleTax();
+  // Total = Subtotal - Discount (changed from + tax)
+  const calculateTotal = () => {
+    return calculateSubtotal() - calculateDiscount();
   };
 
   // For form display (showing all items including zero ones)
@@ -138,9 +135,9 @@ export default function CreateInvoice() {
         ];
       }),
       foot: [
-        ["", "", "Subtotal:", `${calculateVisibleSubtotal().toLocaleString()}`],
-        ["", "", `Tax (${taxRate}%):`, `${calculateVisibleTax().toLocaleString()}`],
-        ["", "", "Total:", `${calculateVisibleTotal().toLocaleString()}`],
+        ["", "", "Subtotal:", `${calculateSubtotal().toLocaleString()}`],
+        ["", "", `Discount (${discountRate}%):`, `-${calculateDiscount().toLocaleString()}`], // Changed tax to discount with minus sign
+        ["", "", "Total:", `${calculateTotal().toLocaleString()}`],
       ],
       theme: "striped",
       headStyles: { fillColor: [59, 130, 246] },
@@ -337,28 +334,28 @@ export default function CreateInvoice() {
 
               <div className="mt-4 pt-4 border-t dark:border-neutral-700">
                 <div className="flex justify-between mb-2">
-                  <span>Subtotal (all items):</span>
-                  <span className="font-medium">₦{calculateAllSubtotal().toLocaleString()}</span>
+                  <span>Subtotal:</span>
+                  <span className="font-medium">₦{calculateSubtotal().toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between mb-2 text-sm text-muted-foreground">
                   <span>Visible subtotal:</span>
-                  <span>₦{calculateVisibleSubtotal().toLocaleString()}</span>
+                  <span>₦{calculateSubtotal().toLocaleString()}</span>
                 </div>
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
-                    <span>Tax Rate:</span>
+                    <span>Discount Rate:</span> {/* Changed label from Tax to Discount */}
                     <Input
                       type="number"
-                      value={taxRate}
-                      onChange={(e) => setTaxRate(parseFloat(e.target.value) || 0)}
+                      value={discountRate}
+                      onChange={(e) => setDiscountRate(parseFloat(e.target.value) || 0)}
                       className="w-20 h-8"
                     />%
                   </div>
-                  <span className="font-medium">₦{calculateVisibleTax().toLocaleString()}</span>
+                  <span className="font-medium text-green-600">-₦{calculateDiscount().toLocaleString()}</span> {/* Added minus sign and green color */}
                 </div>
                 <div className="flex justify-between text-lg font-bold">
                   <span>Total:</span>
-                  <span>₦{calculateVisibleTotal().toLocaleString()}</span>
+                  <span>₦{calculateTotal().toLocaleString()}</span>
                 </div>
               </div>
             </div>
@@ -450,15 +447,15 @@ export default function CreateInvoice() {
                   <div className="w-64">
                     <div className="flex justify-between py-1">
                       <span className="text-gray-600">Subtotal:</span>
-                      <span className="font-medium">{calculateVisibleSubtotal().toLocaleString()} NGN</span>
+                      <span className="font-medium">{calculateSubtotal().toLocaleString()} NGN</span>
                     </div>
                     <div className="flex justify-between py-1">
-                      <span className="text-gray-600">Tax ({taxRate}%):</span>
-                      <span className="font-medium">{calculateVisibleTax().toLocaleString()} NGN</span>
+                      <span className="text-gray-600">Discount ({discountRate}%):</span>
+                      <span className="font-medium text-green-600">-{calculateDiscount().toLocaleString()} NGN</span>
                     </div>
                     <div className="flex justify-between py-2 border-t border-gray-300 font-bold">
                       <span>Total:</span>
-                      <span>{calculateVisibleTotal().toLocaleString()} NGN</span>
+                      <span>{calculateTotal().toLocaleString()} NGN</span>
                     </div>
                   </div>
                 </div>

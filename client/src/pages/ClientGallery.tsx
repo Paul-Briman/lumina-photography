@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useParams } from "wouter";
 import { useSharedGallery } from "@/hooks/use-galleries";
 import { Button } from "@/components/ui/button";
@@ -18,9 +18,8 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Lightbox } from "@/components/ui/lightbox";
 
-// Animation styles - ONLY ADDITION
+// Animation styles
 const animationStyles = `
   @keyframes fadeInScale {
     0% {
@@ -90,12 +89,164 @@ const animationStyles = `
   }
 `;
 
-// Define the Photo type inline since we know its structure
+// Define the Photo type inline
 interface Photo {
   id: number;
   filename: string;
   storagePath: string;
   size: number;
+}
+
+// Lightbox Component with swipe support
+function Lightbox({
+  isOpen,
+  onClose,
+  images,
+  currentIndex,
+  onIndexChange,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  images: Array<{ id: number; url: string; filename: string }>;
+  currentIndex: number;
+  onIndexChange: (index: number) => void;
+}) {
+  const [isLoading, setIsLoading] = useState(true);
+  const [touchStart, setTouchStart] = useState(0);
+  const [touchEnd, setTouchEnd] = useState(0);
+  const { toast } = useToast();
+
+  // Minimum swipe distance required (in px)
+  const minSwipeDistance = 50;
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(0);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+    
+    if (isLeftSwipe && images.length > 1) {
+      handleNext();
+    } else if (isRightSwipe && images.length > 1) {
+      handlePrevious();
+    }
+  };
+
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!isOpen) return;
+      if (e.key === "Escape") onClose();
+      if (images.length > 1) {
+        if (e.key === "ArrowLeft") handlePrevious();
+        if (e.key === "ArrowRight") handleNext();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, currentIndex, images.length]);
+
+  if (!isOpen) return null;
+
+  const handlePrevious = () => {
+    setIsLoading(true);
+    onIndexChange(currentIndex > 0 ? currentIndex - 1 : images.length - 1);
+  };
+
+  const handleNext = () => {
+    setIsLoading(true);
+    onIndexChange(currentIndex < images.length - 1 ? currentIndex + 1 : 0);
+  };
+
+  const handleDownload = async () => {
+    try {
+      const response = await fetch(images[currentIndex].url);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = images[currentIndex].filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      toast({ title: "Success", description: "Download started." });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Download failed.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center">
+      <button
+        onClick={onClose}
+        className="absolute top-6 right-6 text-white/80 hover:text-white z-10 p-2 rounded-full bg-black/20 hover:bg-black/40 transition-colors"
+      >
+        <X className="h-8 w-8" />
+      </button>
+
+      {images.length > 1 && (
+        <>
+          <button
+            onClick={handlePrevious}
+            className="absolute left-6 text-white/80 hover:text-white p-2 rounded-full bg-black/20 hover:bg-black/40 transition-colors"
+          >
+            <ChevronLeft className="h-10 w-10" />
+          </button>
+          <button
+            onClick={handleNext}
+            className="absolute right-6 text-white/80 hover:text-white p-2 rounded-full bg-black/20 hover:bg-black/40 transition-colors"
+          >
+            <ChevronRight className="h-10 w-10" />
+          </button>
+        </>
+      )}
+
+      <button
+        onClick={handleDownload}
+        className="absolute bottom-6 right-6 text-white/80 hover:text-white p-3 rounded-full bg-black/20 hover:bg-black/40 transition-colors flex items-center gap-2"
+      >
+        <Download className="h-6 w-6" />
+        <span className="text-sm font-medium">Download</span>
+      </button>
+
+      {images.length > 1 && (
+        <div className="absolute bottom-6 left-6 text-white/60 text-sm bg-black/20 px-3 py-1 rounded-full">
+          {currentIndex + 1} / {images.length}
+        </div>
+      )}
+
+      <div
+        className="max-w-[90vw] max-h-[90vh]"
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+      >
+        {isLoading && (
+          <div className="w-12 h-12 border-4 border-white/20 border-t-white rounded-full animate-spin absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+        )}
+        <img
+          src={images[currentIndex].url}
+          alt={images[currentIndex].filename}
+          className={`max-w-full max-h-[90vh] object-contain transition-opacity duration-300 ${isLoading ? "opacity-0" : "opacity-100"}`}
+          onLoad={() => setIsLoading(false)}
+        />
+      </div>
+    </div>
+  );
 }
 
 export default function ClientGallery() {
@@ -120,7 +271,7 @@ export default function ClientGallery() {
   // Ref for scrolling to gallery
   const galleryRef = useRef<HTMLDivElement>(null);
 
-  // Add animation styles - ONLY ADDITION
+  // Add animation styles
   useEffect(() => {
     const styleSheet = document.createElement("style");
     styleSheet.textContent = animationStyles;
@@ -129,6 +280,70 @@ export default function ClientGallery() {
       document.head.removeChild(styleSheet);
     };
   }, []);
+
+  // Helper function for sequential downloads
+  const downloadPhotosSequentially = async (photos: Photo[]) => {
+    const failedDownloads: string[] = [];
+    
+    for (let i = 0; i < photos.length; i++) {
+      const photo = photos[i];
+      
+      try {
+        // Show progress toast
+        toast({
+          title: `Downloading ${i + 1} of ${photos.length}`,
+          description: photo.filename,
+        });
+
+        const response = await fetch(photo.storagePath);
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        
+        // Fix filename extension
+        let filename = photo.filename;
+        if (filename.toLowerCase().endsWith('.jfif')) {
+          filename = filename.replace(/\.jfif$/i, '.jpg');
+        }
+        if (!filename.includes('.')) {
+          filename = filename + '.jpg';
+        }
+        
+        a.download = filename;
+        document.body.appendChild(a);
+        
+        // Small delay between click creations to prevent browser blocking
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        
+        // Delay between downloads (500ms)
+        if (i < photos.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        
+      } catch (error) {
+        console.error(`Failed to download ${photo.filename}:`, error);
+        failedDownloads.push(photo.filename);
+      }
+    }
+    
+    if (failedDownloads.length > 0) {
+      toast({
+        title: "Partial Success",
+        description: `${photos.length - failedDownloads.length} downloaded, ${failedDownloads.length} failed`,
+        variant: "default",
+      });
+    } else {
+      toast({
+        title: "Success",
+        description: `All ${photos.length} photos downloaded`,
+      });
+    }
+  };
 
   const handleVerifyPin = () => {
     if (!gallery) return;
@@ -142,13 +357,20 @@ export default function ClientGallery() {
             const photo = gallery.photos.find(
               (p: Photo) => p.id === pendingDownload.photoId,
             );
-            if (photo) proceedWithDownload(photo);
+            if (photo) {
+              // Single download - use sequential with just one photo
+              downloadPhotosSequentially([photo]);
+            }
           } else if (pendingDownload.type === "all") {
-            proceedWithDownloadAll();
+            const photosToDownload = gallery.photos.filter((p: Photo) =>
+              selectedPhotos.has(p.id)
+            );
+            downloadPhotosSequentially(photosToDownload);
           }
         }
         setShowPinDialog(false);
         setPin("");
+        setSelectedPhotos(new Set());
       } else {
         toast({
           title: "Invalid PIN",
@@ -161,100 +383,6 @@ export default function ClientGallery() {
     }, 500);
   };
 
-  const proceedWithDownload = async (photo: Photo) => {
-    try {
-      const response = await fetch(photo.storagePath);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-
-      // Fix the file extension
-      let filename = photo.filename;
-      // If it ends with .jfif, change to .jpg
-      if (filename.toLowerCase().endsWith(".jfif")) {
-        filename = filename.replace(/\.jfif$/i, ".jpg");
-      }
-      // If it has no extension or weird extension, add .jpg
-      if (!filename.includes(".")) {
-        filename = filename + ".jpg";
-      }
-
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-      toast({ title: "Success", description: "Download started." });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Download failed.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const proceedWithDownloadAll = async () => {
-    if (!gallery || selectedPhotos.size === 0) return;
-
-    setIsDownloading(true);
-    try {
-      const selectedPhotosList = gallery.photos.filter((p: Photo) =>
-        selectedPhotos.has(p.id),
-      );
-
-      // Download each photo sequentially with delay
-      for (let i = 0; i < selectedPhotosList.length; i++) {
-        const photo = selectedPhotosList[i];
-
-        if (i > 0) {
-          await new Promise((resolve) => setTimeout(resolve, 500));
-        }
-
-        const response = await fetch(photo.storagePath);
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-
-        // Fix the file extension
-        let filename = photo.filename;
-        if (filename.toLowerCase().endsWith(".jfif")) {
-          filename = filename.replace(/\.jfif$/i, ".jpg");
-        }
-        if (!filename.includes(".")) {
-          filename = filename + ".jpg";
-        }
-
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-
-        // Update progress toast
-        toast({
-          title: "Downloading",
-          description: `Downloaded ${i + 1} of ${selectedPhotosList.length} photos`,
-        });
-      }
-
-      toast({
-        title: "Success",
-        description: `${selectedPhotosList.length} photos downloaded.`,
-      });
-      setSelectedPhotos(new Set());
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to download photos.",
-        variant: "destructive",
-      });
-    }
-    setIsDownloading(false);
-  };
-
   const handleDownload = (photo: Photo) => {
     setPendingDownload({ type: "single", photoId: photo.id });
     setShowPinDialog(true);
@@ -263,7 +391,8 @@ export default function ClientGallery() {
   const handleDownloadAll = () => {
     if (!gallery || gallery.photos.length === 0) return;
     setSelectedPhotos(new Set(gallery.photos.map((p: Photo) => p.id)));
-    handleDownloadSelected(); // This will trigger the PIN dialog
+    setPendingDownload({ type: "all" });
+    setShowPinDialog(true);
   };
 
   const handleDownloadSelected = () => {

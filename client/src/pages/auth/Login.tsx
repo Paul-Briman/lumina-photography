@@ -42,6 +42,7 @@ export default function Login() {
   const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
   const [isResetting, setIsResetting] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
 
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -59,16 +60,14 @@ export default function Login() {
 
   async function onSubmit(values: z.infer<typeof loginSchema>) {
     if (isPending) return;
-
+    
     setIsPending(true);
     try {
       await login(values);
-      // Small delay to ensure auth state is propagated
       setTimeout(() => {
         setLocation("/galleries");
       }, 100);
     } catch (error) {
-      // Error handled by auth provider toast
       console.error("Login error:", error);
     } finally {
       setTimeout(() => setIsPending(false), 500);
@@ -87,26 +86,39 @@ export default function Login() {
 
     setIsResetting(true);
     try {
-      // This would connect to your backend to send a reset email
-      // For now, we'll simulate it
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      toast({
-        title: "Reset email sent",
-        description: "Check your inbox for password reset instructions.",
+      const response = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: resetEmail }),
       });
 
-      setForgotPasswordOpen(false);
-      setResetEmail("");
-    } catch (error) {
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to send reset email");
+      }
+
+      setResetSent(true);
+      toast({
+        title: "Reset link sent",
+        description: "Check your email for password reset instructions.",
+      });
+      
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to send reset email. Please try again.",
+        description: error.message || "Failed to send reset email",
         variant: "destructive",
       });
     } finally {
       setIsResetting(false);
     }
+  };
+
+  const closeDialog = () => {
+    setForgotPasswordOpen(false);
+    setResetEmail("");
+    setResetSent(false);
   };
 
   return (
@@ -118,25 +130,21 @@ export default function Login() {
             <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center text-primary-foreground">
               <Camera className="h-6 w-6" />
             </div>
-            <h1 className="font-display font-semibold text-2xl text-primary">
-              Lumina
-            </h1>
+            <h1 className="font-display font-semibold text-2xl text-primary">Lumina</h1>
           </div>
           <h2 className="font-display text-4xl font-bold leading-tight mb-4">
-            Showcase your work
-            <br />
+            Showcase your work<br />
             with elegance.
           </h2>
           <p className="text-muted-foreground text-lg max-w-md">
-            The professional platform for photographers to deliver stunning
-            galleries and manage clients.
+            The professional platform for photographers to deliver stunning galleries and manage clients.
           </p>
         </div>
-
+        
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/10 rounded-full blur-3xl opacity-50 pointer-events-none" />
-
+        
         <div className="relative z-10 text-sm text-muted-foreground">
-          © 2026 Lumina. All rights reserved.
+          © 2024 Lumina. All rights reserved.
         </div>
       </div>
 
@@ -144,33 +152,25 @@ export default function Login() {
       <div className="flex items-center justify-center p-8">
         <Card className="w-full max-w-md border-0 shadow-none">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold tracking-tight">
-              Sign in
-            </CardTitle>
+            <CardTitle className="text-2xl font-bold tracking-tight">Sign in</CardTitle>
             <CardDescription>
               Enter your email and password to access your dashboard
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Form {...form}>
-              <form
-                onSubmit={form.handleSubmit(onSubmit)}
-                className="space-y-4"
-                autoComplete="off"
-              >
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" autoComplete="off">
                 <FormField
                   control={form.control}
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel htmlFor="email">Email</FormLabel>{" "}
-                      {/* Add htmlFor */}
+                      <FormLabel>Email</FormLabel>
                       <FormControl>
-                        <Input
-                          id="email" // Add id
-                          placeholder="name@example.com"
+                        <Input 
+                          placeholder="name@example.com" 
                           type="email"
-                          {...field}
+                          {...field} 
                           autoComplete="off"
                         />
                       </FormControl>
@@ -178,24 +178,28 @@ export default function Login() {
                     </FormItem>
                   )}
                 />
-
+                
                 <FormField
                   control={form.control}
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel htmlFor="password">Password</FormLabel>{" "}
-                      {/* Add htmlFor */}
+                      <FormLabel>Password</FormLabel>
                       <FormControl>
                         <div className="relative">
                           <Input
-                            id="password" // Add id
                             type={showPassword ? "text" : "password"}
                             {...field}
                             autoComplete="current-password"
                             className="pr-10"
                           />
-                          {/* ... */}
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                          >
+                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
                         </div>
                       </FormControl>
                       <FormMessage />
@@ -204,10 +208,7 @@ export default function Login() {
                 />
 
                 <div className="flex items-center justify-end">
-                  <Dialog
-                    open={forgotPasswordOpen}
-                    onOpenChange={setForgotPasswordOpen}
-                  >
+                  <Dialog open={forgotPasswordOpen} onOpenChange={setForgotPasswordOpen}>
                     <DialogTrigger asChild>
                       <button
                         type="button"
@@ -218,48 +219,64 @@ export default function Login() {
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-md">
                       <DialogHeader>
-                        <DialogTitle>Reset password</DialogTitle>
+                        <DialogTitle>Reset your password</DialogTitle>
                         <DialogDescription>
-                          Enter your email address and we'll send you a link to
-                          reset your password.
+                          {!resetSent 
+                            ? "Enter your email address and we'll send you a link to reset your password."
+                            : "Check your email for the reset link. It may take a few minutes to arrive."}
                         </DialogDescription>
                       </DialogHeader>
-                      <div className="space-y-4 py-4">
-                        <Input
-                          type="email"
-                          placeholder="Enter your email address"
-                          value={resetEmail}
-                          onChange={(e) => setResetEmail(e.target.value)}
-                        />
-                        <div className="flex justify-end gap-3">
-                          <Button
-                            variant="outline"
-                            onClick={() => setForgotPasswordOpen(false)}
-                          >
-                            Cancel
-                          </Button>
-                          <Button
-                            onClick={handleForgotPassword}
-                            disabled={isResetting}
-                          >
-                            {isResetting ? (
-                              <>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Sending...
-                              </>
-                            ) : (
-                              "Send reset link"
-                            )}
-                          </Button>
+                      
+                      {!resetSent ? (
+                        <div className="space-y-4 py-4">
+                          <Input
+                            type="email"
+                            placeholder="name@example.com"
+                            value={resetEmail}
+                            onChange={(e) => setResetEmail(e.target.value)}
+                          />
+                          <div className="flex justify-end gap-3">
+                            <Button
+                              variant="outline"
+                              onClick={closeDialog}
+                            >
+                              Cancel
+                            </Button>
+                            <Button
+                              onClick={handleForgotPassword}
+                              disabled={isResetting}
+                            >
+                              {isResetting ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  Sending...
+                                </>
+                              ) : (
+                                "Send reset link"
+                              )}
+                            </Button>
+                          </div>
                         </div>
-                      </div>
+                      ) : (
+                        <div className="space-y-4 py-4">
+                          <p className="text-sm text-muted-foreground">
+                            We've sent a password reset link to <strong>{resetEmail}</strong>. 
+                            Click the link in the email to create a new password.
+                          </p>
+                          <div className="flex justify-end">
+                            <Button onClick={closeDialog}>
+                              Close
+                            </Button>
+                          </div>
+                        </div>
+                      )}
                     </DialogContent>
                   </Dialog>
                 </div>
-
-                <Button
-                  className="w-full h-11 text-base"
-                  type="submit"
+                
+                <Button 
+                  className="w-full h-11 text-base" 
+                  type="submit" 
                   disabled={isPending}
                 >
                   {isPending ? (
@@ -276,10 +293,7 @@ export default function Login() {
 
             <div className="mt-6 text-center text-sm text-muted-foreground">
               Don't have an account?{" "}
-              <Link
-                href="/register"
-                className="font-medium text-primary hover:underline"
-              >
+              <Link href="/register" className="font-medium text-primary hover:underline">
                 Register now
               </Link>
             </div>
