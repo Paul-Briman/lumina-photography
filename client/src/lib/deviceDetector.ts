@@ -1,4 +1,4 @@
-import UAParser from 'ua-parser-js';
+import * as UAParser from 'ua-parser-js';
 
 export interface DeviceInfo {
   isIOS: boolean;
@@ -9,7 +9,7 @@ export interface DeviceInfo {
 }
 
 export function getDeviceInfo(): DeviceInfo {
-  const parser = new UAParser.UAParser(); // Correct way to instantiate
+  const parser = new UAParser.UAParser();
   const result = parser.getResult();
   
   const osName = result.os.name?.toLowerCase() || '';
