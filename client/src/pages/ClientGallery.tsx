@@ -18,6 +18,8 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { getDeviceInfo, type DeviceInfo } from "@/lib/deviceDetector";
+import JSZip from "jszip";
 
 // Animation styles
 const animationStyles = `
@@ -89,7 +91,6 @@ const animationStyles = `
   }
 `;
 
-// Define the Photo type inline
 interface Photo {
   id: number;
   filename: string;
@@ -116,7 +117,6 @@ function Lightbox({
   const [touchEnd, setTouchEnd] = useState(0);
   const { toast } = useToast();
 
-  // Minimum swipe distance required (in px)
   const minSwipeDistance = 50;
 
   const onTouchStart = (e: React.TouchEvent) => {
@@ -261,17 +261,15 @@ export default function ClientGallery() {
   const [isVerifying, setIsVerifying] = useState(false);
   const { toast } = useToast();
 
-  // Gallery view states
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [selectedPhotos, setSelectedPhotos] = useState<Set<number>>(new Set());
   const [isDownloading, setIsDownloading] = useState(false);
+  const [deviceInfo, setDeviceInfo] = useState<DeviceInfo | null>(null);
 
-  // Ref for scrolling to gallery
   const galleryRef = useRef<HTMLDivElement>(null);
 
-  // Add animation styles
   useEffect(() => {
     const styleSheet = document.createElement("style");
     styleSheet.textContent = animationStyles;
@@ -281,15 +279,74 @@ export default function ClientGallery() {
     };
   }, []);
 
-  // Helper function for sequential downloads
-  const downloadPhotosSequentially = async (photos: Photo[]) => {
+  useEffect(() => {
+    setDeviceInfo(getDeviceInfo());
+  }, []);
+
+  const downloadPhotos = async (photos: Photo[]) => {
     const failedDownloads: string[] = [];
+    const isIOS = deviceInfo?.isIOS || false;
+    
+    if (isIOS && photos.length > 1) {
+      try {
+        toast({
+          title: "Creating ZIP file",
+          description: `Packaging ${photos.length} photos for iOS...`,
+        });
+        
+        const zip = new JSZip();
+        
+        for (let i = 0; i < photos.length; i++) {
+          const photo = photos[i];
+          
+          const response = await fetch(photo.storagePath);
+          const blob = await response.blob();
+          
+          let filename = photo.filename;
+          if (filename.toLowerCase().endsWith('.jfif')) {
+            filename = filename.replace(/\.jfif$/i, '.jpg');
+          }
+          if (!filename.includes('.')) {
+            filename = filename + '.jpg';
+          }
+          
+          zip.file(filename, blob);
+          
+          toast({
+            title: "Creating ZIP",
+            description: `Added ${i + 1} of ${photos.length} photos`,
+          });
+        }
+        
+        const content = await zip.generateAsync({ type: "blob" });
+        const url = window.URL.createObjectURL(content);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `lumina-${photos.length}-photos.zip`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        
+        toast({
+          title: "Success",
+          description: `${photos.length} photos downloaded as ZIP`,
+        });
+        
+        return;
+      } catch (error) {
+        console.error("ZIP creation failed:", error);
+        toast({
+          title: "ZIP failed",
+          description: "Falling back to sequential download...",
+        });
+      }
+    }
     
     for (let i = 0; i < photos.length; i++) {
       const photo = photos[i];
       
       try {
-        // Show progress toast
         toast({
           title: `Downloading ${i + 1} of ${photos.length}`,
           description: photo.filename,
@@ -301,7 +358,6 @@ export default function ClientGallery() {
         const a = document.createElement('a');
         a.href = url;
         
-        // Fix filename extension
         let filename = photo.filename;
         if (filename.toLowerCase().endsWith('.jfif')) {
           filename = filename.replace(/\.jfif$/i, '.jpg');
@@ -313,14 +369,12 @@ export default function ClientGallery() {
         a.download = filename;
         document.body.appendChild(a);
         
-        // Small delay between click creations to prevent browser blocking
         await new Promise(resolve => setTimeout(resolve, 100));
         
         a.click();
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
         
-        // Delay between downloads (500ms)
         if (i < photos.length - 1) {
           await new Promise(resolve => setTimeout(resolve, 500));
         }
@@ -351,21 +405,19 @@ export default function ClientGallery() {
     setIsVerifying(true);
     setTimeout(() => {
       if (pin === gallery?.downloadPin) {
-        // PIN correct - proceed with pending download
         if (pendingDownload) {
           if (pendingDownload.type === "single" && pendingDownload.photoId) {
             const photo = gallery.photos.find(
               (p: Photo) => p.id === pendingDownload.photoId,
             );
             if (photo) {
-              // Single download - use sequential with just one photo
-              downloadPhotosSequentially([photo]);
+              downloadPhotos([photo]);
             }
           } else if (pendingDownload.type === "all") {
             const photosToDownload = gallery.photos.filter((p: Photo) =>
               selectedPhotos.has(p.id)
             );
-            downloadPhotosSequentially(photosToDownload);
+            downloadPhotos(photosToDownload);
           }
         }
         setShowPinDialog(false);
@@ -656,7 +708,7 @@ export default function ClientGallery() {
             </div>
           )}
 
-          {/* Photo Grid or Empty State */}
+          {/* Photo Grid */}
           {gallery.photos.length === 0 ? (
             <div className="text-center py-24 bg-white dark:bg-neutral-800 rounded-3xl border border-dashed border-border/60 dark:border-neutral-700 shadow-sm">
               <div className="h-16 w-16 bg-muted dark:bg-neutral-700 rounded-2xl flex items-center justify-center mx-auto mb-4">
@@ -686,7 +738,6 @@ export default function ClientGallery() {
                     className="w-full h-auto object-cover"
                     loading="lazy"
                   />
-
                   <div className="absolute top-2 sm:top-3 left-2 sm:left-3 z-10">
                     <div
                       className={`w-5 h-5 sm:w-6 sm:h-6 rounded border-2 transition-all ${
@@ -704,7 +755,6 @@ export default function ClientGallery() {
                       )}
                     </div>
                   </div>
-
                   <div className="absolute bottom-2 sm:bottom-3 right-2 sm:right-3 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                     <Button
                       size="icon"
