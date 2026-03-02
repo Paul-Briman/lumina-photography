@@ -105,12 +105,14 @@ function Lightbox({
   images,
   currentIndex,
   onIndexChange,
+  onDownload,
 }: {
   isOpen: boolean;
   onClose: () => void;
   images: Array<{ id: number; url: string; filename: string }>;
   currentIndex: number;
   onIndexChange: (index: number) => void;
+  onDownload: (image: { id: number; url: string; filename: string }) => void;
 }) {
   const [isLoading, setIsLoading] = useState(true);
   const [touchStart, setTouchStart] = useState(0);
@@ -167,26 +169,8 @@ function Lightbox({
     onIndexChange(currentIndex < images.length - 1 ? currentIndex + 1 : 0);
   };
 
-  const handleDownload = async () => {
-    try {
-      const response = await fetch(images[currentIndex].url);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = images[currentIndex].filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-      toast({ title: "Success", description: "Download started." });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Download failed.",
-        variant: "destructive",
-      });
-    }
+  const handleDownload = () => {
+    onDownload(images[currentIndex]);
   };
 
   return (
@@ -473,6 +457,14 @@ export default function ClientGallery() {
     }
   };
 
+  const handleLightboxDownload = (image: { id: number; url: string; filename: string }) => {
+    const photo = gallery?.photos.find((p: Photo) => p.storagePath === image.url);
+    if (photo) {
+      setPendingDownload({ type: "single", photoId: photo.id });
+      setShowPinDialog(true);
+    }
+  };
+
   const scrollToGallery = () => {
     galleryRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -520,6 +512,7 @@ export default function ClientGallery() {
         images={photoImages}
         currentIndex={currentImageIndex}
         onIndexChange={setCurrentImageIndex}
+        onDownload={handleLightboxDownload}
       />
 
       {/* PIN Dialog */}
@@ -592,16 +585,16 @@ export default function ClientGallery() {
 
         <div className="relative z-10 h-full flex flex-col items-center justify-center text-white px-4 sm:px-6">
           <h1
-            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold text-center mb-4 sm:mb-6 animate-slide-up"
+            className="text-3xl xs:text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold text-center mb-3 sm:mb-4 md:mb-6 animate-slide-up"
             style={{
               fontFamily: "Arial, Helvetica, sans-serif",
-              letterSpacing: "0.5px",
+              letterSpacing: "0.3px",
             }}
           >
             P H O T O <span style={{ margin: "0 0.3em" }} /> A S S E T
           </h1>
           <p
-            className="text-xl sm:text-2xl md:text-3xl lg:text-4xl mb-6 sm:mb-8 md:mb-10 text-center italic px-2 animate-slide-up animate-delay-1"
+            className="text-lg xs:text-xl sm:text-2xl md:text-3xl lg:text-4xl mb-4 sm:mb-6 md:mb-8 lg:mb-10 text-center italic px-2 animate-slide-up animate-delay-1"
             style={{
               fontFamily: "DM Serif Display, Georgia, Times New Roman, serif",
               fontStyle: "italic",
@@ -612,15 +605,15 @@ export default function ClientGallery() {
           </p>
           <button
             onClick={scrollToGallery}
-            className="px-6 sm:px-8 py-2 sm:py-3 bg-transparent border border-white text-white rounded-full hover:bg-white hover:text-black transition-all duration-300 text-sm sm:text-base tracking-wider font-medium animate-slide-up animate-delay-2 hover:animate-soft-pulse"
+            className="px-5 xs:px-6 sm:px-8 py-2 sm:py-2.5 bg-transparent border border-white text-white rounded-full hover:bg-white hover:text-black transition-all duration-300 text-xs xs:text-sm sm:text-base tracking-wider font-medium animate-slide-up animate-delay-2 hover:animate-soft-pulse"
           >
             VIEW GALLERY
           </button>
         </div>
 
-        <div className="absolute bottom-4 sm:bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
-          <div className="w-4 h-6 sm:w-5 sm:h-8 rounded-full border border-white/30 flex items-start justify-center p-1 sm:p-2">
-            <div className="w-0.5 h-1.5 sm:w-1 sm:h-2 bg-white/60 rounded-full animate-pulse" />
+        <div className="absolute bottom-4 sm:bottom-6 md:bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
+          <div className="w-4 h-6 xs:w-5 xs:h-7 sm:w-5 sm:h-8 md:w-6 md:h-8 rounded-full border border-white/30 flex items-start justify-center p-1 xs:p-1.5 sm:p-2">
+            <div className="w-0.5 h-1.5 xs:w-0.5 xs:h-2 sm:w-1 sm:h-2 md:w-1 md:h-2.5 bg-white/60 rounded-full animate-pulse" />
           </div>
         </div>
       </div>
