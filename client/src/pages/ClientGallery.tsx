@@ -227,6 +227,12 @@ function Lightbox({
           alt={images[currentIndex].filename}
           className={`max-w-full max-h-[90vh] object-contain transition-opacity duration-300 ${isLoading ? "opacity-0" : "opacity-100"}`}
           onLoad={() => setIsLoading(false)}
+          onContextMenu={(e) => e.preventDefault()}
+          style={{
+            WebkitTouchCallout: 'none',
+            WebkitUserSelect: 'none',
+            userSelect: 'none'
+          }}
         />
       </div>
     </div>
@@ -730,6 +736,12 @@ export default function ClientGallery() {
                     alt={photo.filename}
                     className="w-full h-auto object-cover"
                     loading="lazy"
+                    onContextMenu={(e) => e.preventDefault()}
+                    style={{
+                      WebkitTouchCallout: 'none',
+                      WebkitUserSelect: 'none',
+                      userSelect: 'none'
+                    }}
                   />
                   <div className="absolute top-2 sm:top-3 left-2 sm:left-3 z-10">
                     <div
@@ -798,6 +810,12 @@ export default function ClientGallery() {
                       src={photo.storagePath}
                       alt={photo.filename}
                       className="w-full h-full object-cover"
+                      onContextMenu={(e) => e.preventDefault()}
+                      style={{
+                        WebkitTouchCallout: 'none',
+                        WebkitUserSelect: 'none',
+                        userSelect: 'none'
+                      }}
                     />
                   </div>
                   <div className="flex-1 min-w-0">
