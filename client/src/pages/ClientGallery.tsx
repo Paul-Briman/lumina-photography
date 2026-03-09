@@ -132,11 +132,11 @@ function Lightbox({
 
   const onTouchEnd = () => {
     if (!touchStart || !touchEnd) return;
-    
+
     const distance = touchStart - touchEnd;
     const isLeftSwipe = distance > minSwipeDistance;
     const isRightSwipe = distance < -minSwipeDistance;
-    
+
     if (isLeftSwipe && images.length > 1) {
       handleNext();
     } else if (isRightSwipe && images.length > 1) {
@@ -229,9 +229,9 @@ function Lightbox({
           onLoad={() => setIsLoading(false)}
           onContextMenu={(e) => e.preventDefault()}
           style={{
-            WebkitTouchCallout: 'none',
-            WebkitUserSelect: 'none',
-            userSelect: 'none'
+            WebkitTouchCallout: "none",
+            WebkitUserSelect: "none",
+            userSelect: "none",
           }}
         />
       </div>
@@ -276,53 +276,53 @@ export default function ClientGallery() {
   const downloadPhotos = async (photos: Photo[]) => {
     const failedDownloads: string[] = [];
     const isIOS = deviceInfo?.isIOS || false;
-    
+
     if (isIOS && photos.length > 1) {
       try {
         toast({
           title: "Creating ZIP file",
           description: `Packaging ${photos.length} photos for iOS...`,
         });
-        
+
         const zip = new JSZip();
-        
+
         for (let i = 0; i < photos.length; i++) {
           const photo = photos[i];
-          
+
           const response = await fetch(photo.storagePath);
           const blob = await response.blob();
-          
+
           let filename = photo.filename;
-          if (filename.toLowerCase().endsWith('.jfif')) {
-            filename = filename.replace(/\.jfif$/i, '.jpg');
+          if (filename.toLowerCase().endsWith(".jfif")) {
+            filename = filename.replace(/\.jfif$/i, ".jpg");
           }
-          if (!filename.includes('.')) {
-            filename = filename + '.jpg';
+          if (!filename.includes(".")) {
+            filename = filename + ".jpg";
           }
-          
+
           zip.file(filename, blob);
-          
+
           toast({
             title: "Creating ZIP",
             description: `Added ${i + 1} of ${photos.length} photos`,
           });
         }
-        
+
         const content = await zip.generateAsync({ type: "blob" });
         const url = window.URL.createObjectURL(content);
-        const a = document.createElement('a');
+        const a = document.createElement("a");
         a.href = url;
         a.download = `lumina-${photos.length}-photos.zip`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
-        
+
         toast({
           title: "Success",
           description: `${photos.length} photos downloaded as ZIP`,
         });
-        
+
         return;
       } catch (error) {
         console.error("ZIP creation failed:", error);
@@ -332,10 +332,10 @@ export default function ClientGallery() {
         });
       }
     }
-    
+
     for (let i = 0; i < photos.length; i++) {
       const photo = photos[i];
-      
+
       try {
         toast({
           title: `Downloading ${i + 1} of ${photos.length}`,
@@ -345,36 +345,35 @@ export default function ClientGallery() {
         const response = await fetch(photo.storagePath);
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
+        const a = document.createElement("a");
         a.href = url;
-        
+
         let filename = photo.filename;
-        if (filename.toLowerCase().endsWith('.jfif')) {
-          filename = filename.replace(/\.jfif$/i, '.jpg');
+        if (filename.toLowerCase().endsWith(".jfif")) {
+          filename = filename.replace(/\.jfif$/i, ".jpg");
         }
-        if (!filename.includes('.')) {
-          filename = filename + '.jpg';
+        if (!filename.includes(".")) {
+          filename = filename + ".jpg";
         }
-        
+
         a.download = filename;
         document.body.appendChild(a);
-        
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
+
+        await new Promise((resolve) => setTimeout(resolve, 100));
+
         a.click();
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
-        
+
         if (i < photos.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 500));
+          await new Promise((resolve) => setTimeout(resolve, 500));
         }
-        
       } catch (error) {
         console.error(`Failed to download ${photo.filename}:`, error);
         failedDownloads.push(photo.filename);
       }
     }
-    
+
     if (failedDownloads.length > 0) {
       toast({
         title: "Partial Success",
@@ -405,7 +404,7 @@ export default function ClientGallery() {
             }
           } else if (pendingDownload.type === "all") {
             const photosToDownload = gallery.photos.filter((p: Photo) =>
-              selectedPhotos.has(p.id)
+              selectedPhotos.has(p.id),
             );
             downloadPhotos(photosToDownload);
           }
@@ -463,8 +462,14 @@ export default function ClientGallery() {
     }
   };
 
-  const handleLightboxDownload = (image: { id: number; url: string; filename: string }) => {
-    const photo = gallery?.photos.find((p: Photo) => p.storagePath === image.url);
+  const handleLightboxDownload = (image: {
+    id: number;
+    url: string;
+    filename: string;
+  }) => {
+    const photo = gallery?.photos.find(
+      (p: Photo) => p.storagePath === image.url,
+    );
     if (photo) {
       setPendingDownload({ type: "single", photoId: photo.id });
       setShowPinDialog(true);
@@ -507,8 +512,28 @@ export default function ClientGallery() {
     filename: p.filename,
   }));
 
-  const heroImageUrl =
-    "https://images.unsplash.com/photo-1494438639946-1ebd1d20bf85?q=80&w=2068&auto=format&fit=crop";
+  // Dynamic hero image based on gallery cover or first photo
+  const getHeroImageUrl = () => {
+    // If gallery has photos
+    if (gallery.photos && gallery.photos.length > 0) {
+      // Check if there's a cover photo set
+      if (gallery.coverPhotoId) {
+        const coverPhoto = gallery.photos.find(
+          (p: Photo) => p.id === gallery.coverPhotoId,
+        );
+        if (coverPhoto) {
+          return coverPhoto.storagePath;
+        }
+      }
+      // No cover photo, use the first photo
+      return gallery.photos[0].storagePath;
+    }
+
+    // No photos at all - use fallback
+    return "https://images.unsplash.com/photo-1494438639946-1ebd1d20bf85?q=80&w=2068&auto=format&fit=crop";
+  };
+
+  const heroImageUrl = getHeroImageUrl();
 
   return (
     <div className="min-h-screen bg-white dark:bg-neutral-950">
@@ -658,7 +683,7 @@ export default function ClientGallery() {
 
                 <Button
                   onClick={handleDownloadAll}
-                  className="rounded-full px-6"
+                  className="rounded-full px-6 bg-white text-black border border-black hover:bg-primary hover:text-white hover:border-primary transition-all duration-300"
                   disabled={isDownloading}
                 >
                   {isDownloading ? (
@@ -738,9 +763,9 @@ export default function ClientGallery() {
                     loading="lazy"
                     onContextMenu={(e) => e.preventDefault()}
                     style={{
-                      WebkitTouchCallout: 'none',
-                      WebkitUserSelect: 'none',
-                      userSelect: 'none'
+                      WebkitTouchCallout: "none",
+                      WebkitUserSelect: "none",
+                      userSelect: "none",
                     }}
                   />
                   <div className="absolute top-2 sm:top-3 left-2 sm:left-3 z-10">
@@ -812,9 +837,9 @@ export default function ClientGallery() {
                       className="w-full h-full object-cover"
                       onContextMenu={(e) => e.preventDefault()}
                       style={{
-                        WebkitTouchCallout: 'none',
-                        WebkitUserSelect: 'none',
-                        userSelect: 'none'
+                        WebkitTouchCallout: "none",
+                        WebkitUserSelect: "none",
+                        userSelect: "none",
                       }}
                     />
                   </div>
