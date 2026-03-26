@@ -618,7 +618,7 @@ export default function ClientGallery() {
           <h1
             className="text-3xl xs:text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold text-center mb-3 sm:mb-4 md:mb-6 animate-slide-up"
             style={{
-              fontFamily: "Arial, Helvetica, sans-serif",
+              fontFamily: "Sego, 'Times New Roman', Georgia, serif",
               letterSpacing: "0.3px",
             }}
           >
@@ -627,12 +627,12 @@ export default function ClientGallery() {
           <p
             className="text-lg xs:text-xl sm:text-2xl md:text-3xl lg:text-4xl mb-4 sm:mb-6 md:mb-8 lg:mb-10 text-center italic px-2 animate-slide-up animate-delay-1"
             style={{
-              fontFamily: "DM Serif Display, Georgia, Times New Roman, serif",
-              fontStyle: "italic",
-              fontWeight: 400,
+              fontFamily: "Arial, DM Serif Display, Georgia, Times New Roman, serif",
+              fontStyle: "normal",
+              fontWeight: 200,
             }}
           >
-            Everyone is Beautiful
+            EVERYONE IS BEAUTIFUL
           </p>
           <button
             onClick={scrollToGallery}

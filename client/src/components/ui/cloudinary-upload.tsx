@@ -49,7 +49,6 @@ export function CloudinaryUpload({ galleryId, onUploadSuccess, onUploadError }: 
           cloudName,
           uploadPreset,
           folder: `lumina-galleries/${galleryId}`,
-          maxFiles: 100,
           multiple: true,
           clientAllowedFormats: ["image"],
           maxFileSize: 10000000, // 10MB
