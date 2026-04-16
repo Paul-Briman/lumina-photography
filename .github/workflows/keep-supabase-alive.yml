@@ -1,0 +1,39 @@
+name: Keep Supabase Alive
+
+# Pings the Supabase REST API every 3 days to reset the 7-day
+# inactivity timer on the free tier. Prevents auto-pause.
+
+on:
+  schedule:
+    # Every 3 days at 06:00 UTC
+    - cron: '0 6 */3 * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase REST API
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "❌ Missing SUPABASE_URL or SUPABASE_ANON_KEY secret"
+            exit 1
+          fi
+
+          response=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+            "$SUPABASE_URL/rest/v1/")
+
+          echo "HTTP status: $response"
+
+          if [ "$response" -ge 200 ] && [ "$response" -lt 400 ]; then
+            echo "✅ Supabase is alive — project activity recorded"
+            exit 0
+          else
+            echo "❌ Ping failed — Supabase may be paused or unreachable"
+            exit 1
+          fi
